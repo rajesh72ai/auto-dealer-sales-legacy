@@ -1,0 +1,56 @@
+//*********************************************************************
+//* JCL:      JCLRPFIN
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  FINANCE & INSURANCE REPORT
+//*           RUNS RPTFIN00 - F&I PRODUCT PENETRATION RATES,
+//*           FINANCE SOURCE MIX, AVERAGE RATE, PROFIT PER DEAL
+//* SCHEDULE: WEEKLY TUESDAY 06:00 CST
+//* OVERRIDE: CHANGE PARM DATE FOR HISTORICAL RERUN
+//*********************************************************************
+//AUTOSLR7 JOB (ACCT),'AUTOSALES-RPFIN',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//RPTOUT   OUTPUT JESDS=ALL,CLASS=A,
+//         DEST=LOCAL,COPIES=1,
+//         FORMS=STD132
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE F&I REPORT (IMS BMP)
+//*-------------------------------------------------------------------
+//RPTFIN   EXEC IMSBATCH,MBR=RPTFIN00,
+//         PSB=PSBRPT01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD DSN=AUTOSALE.PROD.REPORT.FINANCE(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(10,5),RLSE),
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//SYSIN    DD *
+  REPORT-DATE=&LYYMMDD
+  INCLUDE-PRODUCTS=Y
+  INCLUDE-SOURCES=Y
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - PRINT REPORT
+//*-------------------------------------------------------------------
+//PRINT    EXEC PGM=IEBGENER,COND=(4,LT,RPTFIN)
+//SYSUT1   DD DSN=AUTOSALE.PROD.REPORT.FINANCE(&LYYMMDD),DISP=SHR
+//SYSUT2   DD SYSOUT=A,OUTPUT=*.RPTOUT,
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//

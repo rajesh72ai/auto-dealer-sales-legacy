@@ -1,0 +1,171 @@
+PROC 0 REPORT()
+/*********************************************************************/
+/* ASBROWSE - AUTOSALES Report Browse Helper                         */
+/*                                                                   */
+/* Description: Lists available report output datasets. Allows user  */
+/*              to select and browse in ISPF. Shows report date and  */
+/*              size. Option to print or download.                    */
+/*                                                                   */
+/* Usage:       TSO %ASBROWSE                                        */
+/*              TSO %ASBROWSE REPORT(RPTDLY00)                      */
+/*                                                                   */
+/* Author:      AUTOSALES Development Team                           */
+/* System:      AUTOSALES - IMS DC/COBOL/DB2 z/OS                   */
+/*********************************************************************/
+CONTROL NOFLUSH NOMSG
+ERROR DO
+  SET &ERRRC = &LASTCC
+  WRITE *** ASBROWSE error. RC=&ERRRC
+  RETURN
+END
+
+SET &HLQ = &STR(AUTOSALE)
+SET &RPTHLQ = &STR(&HLQ..REPORTS)
+
+/*---------------------------------------------------------------*/
+/* Define available reports                                      */
+/*---------------------------------------------------------------*/
+SET &RPT1  = &STR(RPTDLY00)  ; SET &RD1  = &STR(Daily Sales Summary)
+SET &RPT2  = &STR(RPTWKL00)  ; SET &RD2  = &STR(Weekly Sales Recap)
+SET &RPT3  = &STR(RPTMTH00)  ; SET &RD3  = &STR(Monthly Financial Snapshot)
+SET &RPT4  = &STR(RPTINV00)  ; SET &RD4  = &STR(Inventory Status Report)
+SET &RPT5  = &STR(RPTCOM00)  ; SET &RD5  = &STR(Commission Report)
+SET &RPT6  = &STR(RPTFIN00)  ; SET &RD6  = &STR(Finance Product Report)
+SET &RPT7  = &STR(RPTCUS00)  ; SET &RD7  = &STR(Customer Activity Report)
+SET &RPT8  = &STR(RPTMFG00)  ; SET &RD8  = &STR(Manufacturer Incentive Report)
+SET &RPT9  = &STR(RPTAGN00)  ; SET &RD9  = &STR(Aging Inventory Report)
+SET &RPT10 = &STR(RPTWAR00)  ; SET &RD10 = &STR(Warranty Claims Report)
+SET &RPT11 = &STR(RPTPRF00)  ; SET &RD11 = &STR(Profitability Analysis)
+SET &RPT12 = &STR(RPTFPL00)  ; SET &RD12 = &STR(Floor Plan Report)
+SET &RPT13 = &STR(RPTREG00)  ; SET &RD13 = &STR(Registration Status Report)
+SET &RPT14 = &STR(RPTSUP00)  ; SET &RD14 = &STR(Supplemental Data Report)
+SET &RPTCNT = 14
+
+/*---------------------------------------------------------------*/
+/* If report specified, go directly to browse                    */
+/*---------------------------------------------------------------*/
+IF &REPORT ^= THEN DO
+  SET &SELRPT = &REPORT
+  GOTO BROWSEIT
+END
+
+/*---------------------------------------------------------------*/
+/* Display report selection menu                                 */
+/*---------------------------------------------------------------*/
+WRITE
+WRITE ============================================================
+WRITE    AUTOSALES - Report Browser
+WRITE ============================================================
+WRITE
+WRITE  #   Report ID   Description
+WRITE  --  ----------  -----------------------------------------
+
+SET &I = 1
+DO WHILE &I <= &RPTCNT
+  IF &I < 10 THEN +
+    SET &PAD = &STR( )
+  ELSE +
+    SET &PAD = &STR()
+
+  /* Build display line using indirect variable reference */
+  SET &RNAME = &&RPT&I
+  SET &RDESC = &&RD&I
+  WRITE  &PAD&I.  &RNAME    &RDESC
+  SET &I = &I + 1
+END
+
+WRITE
+WRITE  --  ----------  -----------------------------------------
+WRITE   X  Exit
+WRITE
+WRITENR  Select report number (1-&RPTCNT):
+READ &RSEL
+
+IF &RSEL = X | &RSEL = x THEN DO
+  WRITE  Report browse cancelled.
+  EXIT CODE(0)
+END
+
+IF &RSEL < 1 | &RSEL > &RPTCNT THEN DO
+  WRITE *** Invalid selection: &RSEL
+  EXIT CODE(8)
+END
+
+SET &SELRPT = &&RPT&RSEL
+
+/*---------------------------------------------------------------*/
+/* Browse the selected report                                    */
+/*---------------------------------------------------------------*/
+BROWSEIT: +
+
+/* Report output datasets use GDG format */
+SET &RPTDSN = &STR(&RPTHLQ..&SELRPT..OUTPUT)
+
+WRITE
+WRITE  Report:  &SELRPT
+WRITE  Dataset: &RPTDSN
+
+/* Check if report dataset exists */
+LISTDS '&RPTDSN'
+IF &LASTCC > 0 THEN DO
+  WRITE
+  WRITE *** Report dataset not found: &RPTDSN
+  WRITE *** The report may not have been generated yet.
+  WRITE *** Use ASSUBMIT to submit the report job.
+  EXIT CODE(4)
+END
+
+/* Show dataset info */
+LISTDS '&RPTDSN' STATUS
+WRITE
+
+/*---------------------------------------------------------------*/
+/* Browse using ISPF                                             */
+/*---------------------------------------------------------------*/
+WRITE  Opening report in ISPF browse...
+ISPEXEC BROWSE DATASET('&RPTDSN')
+SET &BRCRC = &LASTCC
+
+IF &BRCRC > 4 THEN DO
+  WRITE *** Browse failed. RC=&BRCRC
+  WRITE *** Attempting direct VIEW...
+  ISPEXEC VIEW DATASET('&RPTDSN')
+END
+
+/*---------------------------------------------------------------*/
+/* Post-browse options: Print or Download                        */
+/*---------------------------------------------------------------*/
+WRITE
+WRITE  Post-browse options:
+WRITE    P - Print report to JES spool
+WRITE    D - Download to PC (via IND$FILE)
+WRITE    X - Exit
+WRITE
+WRITENR  Select option:
+READ &POSTOPT
+
+SELECT (&POSTOPT)
+  WHEN (P) DO
+    WRITE  Printing &SELRPT to default printer...
+    PRINTDS DATASET('&RPTDSN') CLASS(A) DEST(LOCAL)
+    IF &LASTCC = 0 THEN +
+      WRITE  Report sent to printer queue.
+    ELSE +
+      WRITE *** Print failed. RC=&LASTCC
+  END
+
+  WHEN (D) DO
+    WRITE  To download, use your 3270 emulator file transfer:
+    WRITE  IND$FILE GET '&RPTDSN' ASCII CRLF
+    WRITE
+  END
+
+  WHEN (X) DO
+    WRITE  Done.
+  END
+
+  OTHERWISE +
+    WRITE  No action taken.
+END
+
+EXIT CODE(0)

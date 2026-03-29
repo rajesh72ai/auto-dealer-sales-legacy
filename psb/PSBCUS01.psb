@@ -1,0 +1,19 @@
+*================================================================*
+*  PSBCUS01 - CUSTOMER PROGRAMS PSB                              *
+*  AUTOSALES - Automotive Dealer Sales & Reporting System        *
+*  Access: I/O PCB, DBDAUTO2 full access                        *
+*================================================================*
+*
+*------- I/O PCB FOR TERMINAL PROCESSING -------------------------*
+         PCB   TYPE=TP,MODIFY=YES
+*
+*------- DBDAUTO2 - CUSTOMER & SALES (FULL ACCESS) --------------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO2,PROCOPT=A,KEYLEN=10
+         SENSEG NAME=CUSTOMER,PARENT=0,PROCOPT=A
+         SENSEG NAME=CUSTLEAD,PARENT=CUSTOMER,PROCOPT=A
+         SENSEG NAME=SALESDEAL,PARENT=CUSTOMER,PROCOPT=A
+         SENSEG NAME=DEALLINE,PARENT=SALESDEAL,PROCOPT=A
+         SENSEG NAME=TRADEIN,PARENT=SALESDEAL,PROCOPT=A
+*
+         PSBGEN LANG=COBOL,PSBNAME=PSBCUS01
+         END

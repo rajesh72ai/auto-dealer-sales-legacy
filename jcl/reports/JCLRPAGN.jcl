@@ -1,0 +1,57 @@
+//*********************************************************************
+//* JCL:      JCLRPAGN
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  AGING ANALYSIS REPORT
+//*           RUNS RPTAGN00 - VEHICLE AGING BY DEALER, MODEL,
+//*           AND COLOR WITH DAYS-IN-STOCK BRACKETS AND
+//*           FLOOR PLAN INTEREST COST IMPACT
+//* SCHEDULE: WEEKLY MONDAY 07:00 CST
+//* OVERRIDE: CHANGE PARM DATE FOR HISTORICAL RERUN
+//*********************************************************************
+//AUTOSLRC JOB (ACCT),'AUTOSALES-RPAGN',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//RPTOUT   OUTPUT JESDS=ALL,CLASS=A,
+//         DEST=LOCAL,COPIES=1,
+//         FORMS=STD132
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE AGING REPORT (IMS BMP)
+//*-------------------------------------------------------------------
+//RPTAGN   EXEC IMSBATCH,MBR=RPTAGN00,
+//         PSB=PSBRPT01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD DSN=AUTOSALE.PROD.REPORT.AGING(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(15,5),RLSE),
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//SYSIN    DD *
+  REPORT-DATE=&LYYMMDD
+  AGING-BRACKETS=0-30,31-60,61-90,91-120,120+
+  INCLUDE-INTEREST-COST=Y
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - PRINT REPORT
+//*-------------------------------------------------------------------
+//PRINT    EXEC PGM=IEBGENER,COND=(4,LT,RPTAGN)
+//SYSUT1   DD DSN=AUTOSALE.PROD.REPORT.AGING(&LYYMMDD),DISP=SHR
+//SYSUT2   DD SYSOUT=A,OUTPUT=*.RPTOUT,
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//

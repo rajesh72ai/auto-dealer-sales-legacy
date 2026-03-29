@@ -1,0 +1,279 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: DEAL WORKSHEET / QUOTE                            *
+*  TRANSACTION: AUTOSQOT                                         *
+*  DESCRIPTION: Full deal worksheet with pricing and financing   *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+SALQTI   MID
+         SEG
+         MFLD  'AUTOSQOT',LTH=8
+         MFLD  DEALNUM,LTH=8
+         MFLD  CUSTID,LTH=10
+         MFLD  VINNUM,LTH=17
+         MFLD  SLSPID,LTH=6
+         MFLD  VHPRIC,LTH=10
+         MFLD  OPTTOT,LTH=10
+         MFLD  DESTCG,LTH=8
+         MFLD  TRDALL,LTH=10
+         MFLD  TRDPAY,LTH=10
+         MFLD  REBATE,LTH=8
+         MFLD  DISCNT,LTH=8
+         MFLD  DOCFEE,LTH=6
+         MFLD  TXSTAT,LTH=8
+         MFLD  TXCNTY,LTH=8
+         MFLD  TXCITY,LTH=8
+         MFLD  TITFEE,LTH=6
+         MFLD  REGFEE,LTH=6
+         MFLD  DWNPMT,LTH=10
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+SALQTO   MOD
+         SEG
+         MFLD  (DEALNUM,LTH=8)
+         MFLD  (CUSTID,LTH=10)
+         MFLD  (CSNAME,LTH=25)
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYMM,LTH=20)
+         MFLD  (SLSPID,LTH=6)
+         MFLD  (SLPNAM,LTH=20)
+         MFLD  (VHPRIC,LTH=10)
+         MFLD  (OPTTOT,LTH=10)
+         MFLD  (DESTCG,LTH=8)
+         MFLD  (SUBTOT,LTH=10)
+         MFLD  (TRDALL,LTH=10)
+         MFLD  (TRDPAY,LTH=10)
+         MFLD  (NETTRD,LTH=10)
+         MFLD  (REBATE,LTH=8)
+         MFLD  (DISCNT,LTH=8)
+         MFLD  (DOCFEE,LTH=6)
+         MFLD  (TXSTAT,LTH=8)
+         MFLD  (TXCNTY,LTH=8)
+         MFLD  (TXCITY,LTH=8)
+         MFLD  (TXTOTL,LTH=8)
+         MFLD  (TITFEE,LTH=6)
+         MFLD  (REGFEE,LTH=6)
+         MFLD  (TOTPRC,LTH=10)
+         MFLD  (DWNPMT,LTH=10)
+         MFLD  (AMTFIN,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+SALQTDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,17))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      DEAL WORKSHEET / QUOTE',                 X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL / CUSTOMER / SALESPERSON ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'CUSTOMER:',POS=(4,19),ATTR=(PROT,BRT)
+         DFLD  CUSTID,POS=(4,29),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  CSNAME,POS=(4,40),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 5: VEHICLE / SALESPERSON ---
+         DFLD  'VIN:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(5,6),LTH=17,ATTR=(UNPROT,ALPHA)
+         DFLD  VHYMM,POS=(5,24),LTH=20,ATTR=(PROT,NORM)
+         DFLD  'SLSP:',POS=(5,47),ATTR=(PROT,BRT)
+         DFLD  SLSPID,POS=(5,53),LTH=6,ATTR=(UNPROT,ALPHA)
+         DFLD  SLPNAM,POS=(5,60),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 6: SEPARATOR ---
+         DFLD  '--- VEHICLE PRICING ---',POS=(6,1),ATTR=(PROT,BRT)
+         DFLD  '--- TRADE-IN ---',POS=(6,42),ATTR=(PROT,BRT)
+*
+* --- ROW 7-9: PRICING LEFT / TRADE RIGHT ---
+         DFLD  'VEHICLE PRICE:',POS=(7,1),ATTR=(PROT,NORM)
+         DFLD  VHPRIC,POS=(7,18),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'TRADE ALLOWANCE:',POS=(7,42),ATTR=(PROT,NORM)
+         DFLD  TRDALL,POS=(7,60),LTH=10,ATTR=(UNPROT,NUM)
+*
+         DFLD  'OPTIONS TOTAL:',POS=(8,1),ATTR=(PROT,NORM)
+         DFLD  OPTTOT,POS=(8,18),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'TRADE PAYOFF:',POS=(8,42),ATTR=(PROT,NORM)
+         DFLD  TRDPAY,POS=(8,60),LTH=10,ATTR=(UNPROT,NUM)
+*
+         DFLD  'DESTINATION:',POS=(9,1),ATTR=(PROT,NORM)
+         DFLD  DESTCG,POS=(9,18),LTH=8,ATTR=(UNPROT,NUM)
+         DFLD  'NET TRADE:',POS=(9,42),ATTR=(PROT,NORM)
+         DFLD  NETTRD,POS=(9,60),LTH=10,ATTR=(PROT,BRT)
+*
+         DFLD  'SUBTOTAL:',POS=(10,1),ATTR=(PROT,BRT)
+         DFLD  SUBTOT,POS=(10,18),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 11: DEDUCTIONS ---
+         DFLD  '--- DEDUCTIONS ---',POS=(11,1),ATTR=(PROT,BRT)
+         DFLD  '--- TAXES & FEES ---',POS=(11,42),ATTR=(PROT,BRT)
+*
+         DFLD  'REBATE:',POS=(12,1),ATTR=(PROT,NORM)
+         DFLD  REBATE,POS=(12,18),LTH=8,ATTR=(UNPROT,NUM)
+         DFLD  'STATE TAX:',POS=(12,42),ATTR=(PROT,NORM)
+         DFLD  TXSTAT,POS=(12,60),LTH=8,ATTR=(UNPROT,NUM)
+*
+         DFLD  'DISCOUNT:',POS=(13,1),ATTR=(PROT,NORM)
+         DFLD  DISCNT,POS=(13,18),LTH=8,ATTR=(UNPROT,NUM)
+         DFLD  'COUNTY TAX:',POS=(13,42),ATTR=(PROT,NORM)
+         DFLD  TXCNTY,POS=(13,60),LTH=8,ATTR=(UNPROT,NUM)
+*
+         DFLD  'DOC FEE:',POS=(14,1),ATTR=(PROT,NORM)
+         DFLD  DOCFEE,POS=(14,18),LTH=6,ATTR=(UNPROT,NUM)
+         DFLD  'CITY TAX:',POS=(14,42),ATTR=(PROT,NORM)
+         DFLD  TXCITY,POS=(14,60),LTH=8,ATTR=(UNPROT,NUM)
+*
+         DFLD  'TOTAL TAXES:',POS=(15,42),ATTR=(PROT,NORM)
+         DFLD  TXTOTL,POS=(15,60),LTH=8,ATTR=(PROT,BRT)
+*
+         DFLD  'TITLE FEE:',POS=(16,42),ATTR=(PROT,NORM)
+         DFLD  TITFEE,POS=(16,60),LTH=6,ATTR=(UNPROT,NUM)
+*
+         DFLD  'REG FEE:',POS=(17,42),ATTR=(PROT,NORM)
+         DFLD  REGFEE,POS=(17,60),LTH=6,ATTR=(UNPROT,NUM)
+*
+* --- ROW 18: SEPARATOR ---
+         DFLD  '----------',POS=(18,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 19-21: TOTALS ---
+         DFLD  'TOTAL PRICE:',POS=(19,1),ATTR=(PROT,BRT)
+         DFLD  TOTPRC,POS=(19,18),LTH=10,ATTR=(PROT,BRT)
+         DFLD  'DOWN PAYMENT:',POS=(20,1),ATTR=(PROT,NORM)
+         DFLD  DWNPMT,POS=(20,18),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'AMOUNT FINANCED:',POS=(21,1),ATTR=(PROT,BRT)
+         DFLD  AMTFIN,POS=(21,18),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=CREATE  PF6=UPDATE  PF10=PRINT',              X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+SALQTDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,29))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      DEAL WORKSHEET / QUOTE',                 X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL / CUSTOMER ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'CUSTOMER:',POS=(4,19),ATTR=(PROT,BRT)
+         DFLD  CUSTID,POS=(4,29),LTH=10,ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(4,40),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 5: VEHICLE / SALESPERSON ---
+         DFLD  'VIN:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(5,6),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(5,24),LTH=20,ATTR=(PROT,NORM)
+         DFLD  'SLSP:',POS=(5,47),ATTR=(PROT,BRT)
+         DFLD  SLSPID,POS=(5,53),LTH=6,ATTR=(PROT,NORM)
+         DFLD  SLPNAM,POS=(5,60),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 6: SEPARATOR ---
+         DFLD  '--- VEHICLE PRICING ---',POS=(6,1),ATTR=(PROT,BRT)
+         DFLD  '--- TRADE-IN ---',POS=(6,42),ATTR=(PROT,BRT)
+*
+* --- ROW 7-10: PRICING ---
+         DFLD  'VEHICLE PRICE:',POS=(7,1),ATTR=(PROT,NORM)
+         DFLD  VHPRIC,POS=(7,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TRADE ALLOWANCE:',POS=(7,42),ATTR=(PROT,NORM)
+         DFLD  TRDALL,POS=(7,60),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'OPTIONS TOTAL:',POS=(8,1),ATTR=(PROT,NORM)
+         DFLD  OPTTOT,POS=(8,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TRADE PAYOFF:',POS=(8,42),ATTR=(PROT,NORM)
+         DFLD  TRDPAY,POS=(8,60),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'DESTINATION:',POS=(9,1),ATTR=(PROT,NORM)
+         DFLD  DESTCG,POS=(9,18),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'NET TRADE:',POS=(9,42),ATTR=(PROT,NORM)
+         DFLD  NETTRD,POS=(9,60),LTH=10,ATTR=(PROT,BRT)
+*
+         DFLD  'SUBTOTAL:',POS=(10,1),ATTR=(PROT,BRT)
+         DFLD  SUBTOT,POS=(10,18),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 11: DEDUCTIONS ---
+         DFLD  '--- DEDUCTIONS ---',POS=(11,1),ATTR=(PROT,BRT)
+         DFLD  '--- TAXES & FEES ---',POS=(11,42),ATTR=(PROT,BRT)
+*
+         DFLD  'REBATE:',POS=(12,1),ATTR=(PROT,NORM)
+         DFLD  REBATE,POS=(12,18),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'STATE TAX:',POS=(12,42),ATTR=(PROT,NORM)
+         DFLD  TXSTAT,POS=(12,60),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'DISCOUNT:',POS=(13,1),ATTR=(PROT,NORM)
+         DFLD  DISCNT,POS=(13,18),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'COUNTY TAX:',POS=(13,42),ATTR=(PROT,NORM)
+         DFLD  TXCNTY,POS=(13,60),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'DOC FEE:',POS=(14,1),ATTR=(PROT,NORM)
+         DFLD  DOCFEE,POS=(14,18),LTH=6,ATTR=(PROT,NORM)
+         DFLD  'CITY TAX:',POS=(14,42),ATTR=(PROT,NORM)
+         DFLD  TXCITY,POS=(14,60),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'TOTAL TAXES:',POS=(15,42),ATTR=(PROT,NORM)
+         DFLD  TXTOTL,POS=(15,60),LTH=8,ATTR=(PROT,BRT)
+*
+         DFLD  'TITLE FEE:',POS=(16,42),ATTR=(PROT,NORM)
+         DFLD  TITFEE,POS=(16,60),LTH=6,ATTR=(PROT,NORM)
+*
+         DFLD  'REG FEE:',POS=(17,42),ATTR=(PROT,NORM)
+         DFLD  REGFEE,POS=(17,60),LTH=6,ATTR=(PROT,NORM)
+*
+* --- ROW 18: SEPARATOR ---
+         DFLD  '----------',POS=(18,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 19-21: TOTALS ---
+         DFLD  'TOTAL PRICE:',POS=(19,1),ATTR=(PROT,BRT)
+         DFLD  TOTPRC,POS=(19,18),LTH=10,ATTR=(PROT,BRT)
+         DFLD  'DOWN PAYMENT:',POS=(20,1),ATTR=(PROT,NORM)
+         DFLD  DWNPMT,POS=(20,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'AMOUNT FINANCED:',POS=(21,1),ATTR=(PROT,BRT)
+         DFLD  AMTFIN,POS=(21,18),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=CREATE  PF6=UPDATE  PF10=PRINT',              X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

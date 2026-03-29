@@ -1,0 +1,220 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: REGISTRATION DATA ASSEMBLY                        *
+*  TRANSACTION: AUTOREGA                                         *
+*  DESCRIPTION: Assemble and validate registration data packet   *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+REGGEI   MID
+         SEG
+         MFLD  'AUTOREGA',LTH=8
+         MFLD  DEALNUM,LTH=8
+         MFLD  RGSTTE,LTH=2
+         MFLD  RGTYPE,LTH=10
+         MFLD  LNHNAM,LTH=25
+         MFLD  LNHADR,LTH=30
+         MFLD  LNHCTY,LTH=15
+         MFLD  LNHST,LTH=2
+         MFLD  LNHZIP,LTH=10
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+REGGEO   MOD
+         SEG
+         MFLD  (DEALNUM,LTH=8)
+         MFLD  (CUSTID,LTH=10)
+         MFLD  (CSNAME,LTH=25)
+         MFLD  (CSADDR,LTH=30)
+         MFLD  (CSCITY,LTH=15)
+         MFLD  (CSSTAT,LTH=2)
+         MFLD  (CSZIP,LTH=10)
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYMM,LTH=20)
+         MFLD  (RGSTTE,LTH=2)
+         MFLD  (RGTYPE,LTH=10)
+         MFLD  (LNHNAM,LTH=25)
+         MFLD  (LNHADR,LTH=30)
+         MFLD  (LNHCTY,LTH=15)
+         MFLD  (LNHST,LTH=2)
+         MFLD  (LNHZIP,LTH=10)
+         MFLD  (VALSTS,LTH=10)
+         MFLD  (RGSTTS,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+REGGEDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,11))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    REGISTRATION DATA ASSEMBLY',               X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL INPUT ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,11),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  'STATUS:',POS=(4,22),ATTR=(PROT,NORM)
+         DFLD  RGSTTS,POS=(4,30),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 5: SEPARATOR ---
+         DFLD  '--- BUYER (AUTO-POPULATED) ---',POS=(5,1),              X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 6-8: BUYER INFO ---
+         DFLD  'NAME:',POS=(6,3),ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(6,12),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'ID:',POS=(6,40),ATTR=(PROT,NORM)
+         DFLD  CUSTID,POS=(6,44),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'ADDRESS:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  CSADDR,POS=(7,12),LTH=30,ATTR=(PROT,NORM)
+         DFLD  'CITY:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  CSCITY,POS=(8,9),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'ST:',POS=(8,26),ATTR=(PROT,NORM)
+         DFLD  CSSTAT,POS=(8,30),LTH=2,ATTR=(PROT,NORM)
+         DFLD  'ZIP:',POS=(8,34),ATTR=(PROT,NORM)
+         DFLD  CSZIP,POS=(8,39),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 9: VEHICLE ---
+         DFLD  '--- VEHICLE ---',POS=(9,1),ATTR=(PROT,BRT)
+         DFLD  'VIN:',POS=(10,3),ATTR=(PROT,NORM)
+         DFLD  VINNUM,POS=(10,8),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(10,26),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 11: SEPARATOR ---
+         DFLD  '--- REGISTRATION ---',POS=(11,1),ATTR=(PROT,BRT)
+*
+* --- ROW 12-13: REG FIELDS ---
+         DFLD  'REG STATE:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  RGSTTE,POS=(12,14),LTH=2,ATTR=(UNPROT,ALPHA)
+         DFLD  'REG TYPE:',POS=(12,20),ATTR=(PROT,NORM)
+         DFLD  RGTYPE,POS=(12,30),LTH=10,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 14: SEPARATOR ---
+         DFLD  '--- LIEN HOLDER ---',POS=(14,1),ATTR=(PROT,BRT)
+*
+* --- ROW 15-18: LIEN HOLDER ---
+         DFLD  'NAME:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  LNHNAM,POS=(15,12),LTH=25,ATTR=(UNPROT,ALPHA)
+         DFLD  'ADDRESS:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  LNHADR,POS=(16,12),LTH=30,ATTR=(UNPROT,ALPHA)
+         DFLD  'CITY:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  LNHCTY,POS=(17,9),LTH=15,ATTR=(UNPROT,ALPHA)
+         DFLD  'ST:',POS=(17,26),ATTR=(PROT,NORM)
+         DFLD  LNHST,POS=(17,30),LTH=2,ATTR=(UNPROT,ALPHA)
+         DFLD  'ZIP:',POS=(17,34),ATTR=(PROT,NORM)
+         DFLD  LNHZIP,POS=(17,39),LTH=10,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 19: VALIDATION STATUS ---
+         DFLD  ' ',POS=(18,1),ATTR=(PROT,NORM)
+         DFLD  'VALIDATION:',POS=(19,3),ATTR=(PROT,NORM)
+         DFLD  VALSTS,POS=(19,15),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ASSEMBLE  PF6=VALIDATE  PF10=SUBMIT',        X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+REGGEDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,11))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    REGISTRATION DATA ASSEMBLY',               X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,11),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(4,22),ATTR=(PROT,NORM)
+         DFLD  RGSTTS,POS=(4,30),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 5: SEPARATOR ---
+         DFLD  '--- BUYER ---',POS=(5,1),ATTR=(PROT,BRT)
+*
+* --- ROW 6-8: BUYER INFO ---
+         DFLD  'NAME:',POS=(6,3),ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(6,12),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'ID:',POS=(6,40),ATTR=(PROT,NORM)
+         DFLD  CUSTID,POS=(6,44),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'ADDRESS:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  CSADDR,POS=(7,12),LTH=30,ATTR=(PROT,NORM)
+         DFLD  'CITY:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  CSCITY,POS=(8,9),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'ST:',POS=(8,26),ATTR=(PROT,NORM)
+         DFLD  CSSTAT,POS=(8,30),LTH=2,ATTR=(PROT,NORM)
+         DFLD  'ZIP:',POS=(8,34),ATTR=(PROT,NORM)
+         DFLD  CSZIP,POS=(8,39),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 9-10: VEHICLE ---
+         DFLD  '--- VEHICLE ---',POS=(9,1),ATTR=(PROT,BRT)
+         DFLD  'VIN:',POS=(10,3),ATTR=(PROT,NORM)
+         DFLD  VINNUM,POS=(10,8),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(10,26),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 11-12: REG ---
+         DFLD  '--- REGISTRATION ---',POS=(11,1),ATTR=(PROT,BRT)
+         DFLD  'REG STATE:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  RGSTTE,POS=(12,14),LTH=2,ATTR=(PROT,NORM)
+         DFLD  'REG TYPE:',POS=(12,20),ATTR=(PROT,NORM)
+         DFLD  RGTYPE,POS=(12,30),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 14-17: LIEN HOLDER ---
+         DFLD  '--- LIEN HOLDER ---',POS=(14,1),ATTR=(PROT,BRT)
+         DFLD  'NAME:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  LNHNAM,POS=(15,12),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'ADDRESS:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  LNHADR,POS=(16,12),LTH=30,ATTR=(PROT,NORM)
+         DFLD  'CITY:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  LNHCTY,POS=(17,9),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'ST:',POS=(17,26),ATTR=(PROT,NORM)
+         DFLD  LNHST,POS=(17,30),LTH=2,ATTR=(PROT,NORM)
+         DFLD  'ZIP:',POS=(17,34),ATTR=(PROT,NORM)
+         DFLD  LNHZIP,POS=(17,39),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 19: VALIDATION STATUS ---
+         DFLD  ' ',POS=(18,1),ATTR=(PROT,NORM)
+         DFLD  'VALIDATION:',POS=(19,3),ATTR=(PROT,NORM)
+         DFLD  VALSTS,POS=(19,15),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ASSEMBLE  PF6=VALIDATE  PF10=SUBMIT',        X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

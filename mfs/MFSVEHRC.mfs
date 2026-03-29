@@ -1,0 +1,249 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: VEHICLE RECEIVING/CHECK-IN                        *
+*  TRANSACTION: AUTOVRC                                          *
+*  DESCRIPTION: Receive vehicles from production into inventory  *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+VEHRCI   MID
+         SEG
+         MFLD  'AUTOVRC ',LTH=8
+         MFLD  VIN,LTH=17
+         MFLD  DLRCODE,LTH=5
+         MFLD  STKNUM,LTH=8
+         MFLD  LOTLOC,LTH=10
+         MFLD  ODOMTR,LTH=7
+         MFLD  DMGFLAG,LTH=1
+         MFLD  DMGDESC,LTH=40
+         MFLD  KEYNBR,LTH=6
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+VEHRCO   MOD
+         SEG
+         MFLD  (VIN,LTH=17)
+         MFLD  (MDLYEAR,LTH=4)
+         MFLD  (MAKNAME,LTH=20)
+         MFLD  (MDLNAME,LTH=25)
+         MFLD  (TRIMLEVL,LTH=15)
+         MFLD  (EXTCOLR,LTH=15)
+         MFLD  (INTCOLR,LTH=15)
+         MFLD  (ENGTYPE,LTH=10)
+         MFLD  (TRANSMSN,LTH=10)
+         MFLD  (DRVTRAN,LTH=5)
+         MFLD  (MSRP,LTH=10)
+         MFLD  (INVOICE,LTH=10)
+         MFLD  (DLRCODE,LTH=5)
+         MFLD  (DLRNAME,LTH=30)
+         MFLD  (STKNUM,LTH=8)
+         MFLD  (LOTLOC,LTH=10)
+         MFLD  (ODOMTR,LTH=7)
+         MFLD  (DMGFLAG,LTH=1)
+         MFLD  (DMGDESC,LTH=40)
+         MFLD  (KEYNBR,LTH=6)
+         MFLD  (RCVDATE,LTH=10)
+         MFLD  (RCVSTAT,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+VEHRCDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    VEHICLE RECEIVING/CHECK-IN',             X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: VIN INPUT ---
+         DFLD  'VIN:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  VIN,POS=(4,26),LTH=17,ATTR=(UNPROT,ALPHA)
+         DFLD  'STATUS:',POS=(4,50),ATTR=(PROT,BRT)
+         DFLD  RCVSTAT,POS=(4,58),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 5: SEPARATOR ---
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 6-11: AUTO-POPULATED VEHICLE DATA ---
+         DFLD  '--- VEHICLE FROM PRODUCTION ---',POS=(6,5),ATTR=(PROT,BRT)
+*
+         DFLD  'YEAR:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(7,26),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(7,35),ATTR=(PROT,BRT)
+         DFLD  MAKNAME,POS=(7,41),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLNAME,POS=(8,26),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'TRIM:',POS=(8,55),ATTR=(PROT,BRT)
+         DFLD  TRIMLEVL,POS=(8,61),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'EXT COLOR:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  EXTCOLR,POS=(9,26),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'INT COLOR:',POS=(9,45),ATTR=(PROT,BRT)
+         DFLD  INTCOLR,POS=(9,56),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'ENGINE:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  ENGTYPE,POS=(10,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TRANS:',POS=(10,40),ATTR=(PROT,BRT)
+         DFLD  TRANSMSN,POS=(10,47),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DRIVE:',POS=(10,60),ATTR=(PROT,BRT)
+         DFLD  DRVTRAN,POS=(10,67),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  'MSRP:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  MSRP,POS=(11,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'INVOICE:',POS=(11,42),ATTR=(PROT,BRT)
+         DFLD  INVOICE,POS=(11,51),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 12: SEPARATOR ---
+         DFLD  ' ',POS=(12,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 13-19: RECEIVING FIELDS ---
+         DFLD  '--- RECEIVING INFORMATION ---',POS=(13,5),ATTR=(PROT,BRT)
+*
+         DFLD  'DEALER CODE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(14,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  DLRNAME,POS=(14,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'STOCK NUMBER:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  STKNUM,POS=(15,26),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  '(AUTO-ASSIGN IF BLANK)',POS=(15,36),ATTR=(PROT,NORM)
+*
+         DFLD  'LOT LOCATION:',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  LOTLOC,POS=(16,26),LTH=10,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'ODOMETER:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  ODOMTR,POS=(17,26),LTH=7,ATTR=(UNPROT,NUM)
+*
+         DFLD  'DAMAGE FLAG:',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  DMGFLAG,POS=(18,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  '(Y=YES, N=NO)',POS=(18,29),ATTR=(PROT,NORM)
+*
+         DFLD  'DAMAGE DESC:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  DMGDESC,POS=(19,26),LTH=40,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'KEY NUMBER:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  KEYNBR,POS=(20,26),LTH=6,ATTR=(UNPROT,ALPHA)
+         DFLD  'RCV DATE:',POS=(20,40),ATTR=(PROT,BRT)
+         DFLD  RCVDATE,POS=(20,50),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=RECEIVE  PF6=UPDATE',                       X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+VEHRCDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    VEHICLE RECEIVING/CHECK-IN',             X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: VIN ---
+         DFLD  'VIN:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  VIN,POS=(4,26),LTH=17,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(4,50),ATTR=(PROT,BRT)
+         DFLD  RCVSTAT,POS=(4,58),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 6-11: VEHICLE DATA ---
+         DFLD  '--- VEHICLE FROM PRODUCTION ---',POS=(6,5),ATTR=(PROT,BRT)
+*
+         DFLD  'YEAR:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(7,26),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(7,35),ATTR=(PROT,BRT)
+         DFLD  MAKNAME,POS=(7,41),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLNAME,POS=(8,26),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'TRIM:',POS=(8,55),ATTR=(PROT,BRT)
+         DFLD  TRIMLEVL,POS=(8,61),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'EXT COLOR:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  EXTCOLR,POS=(9,26),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'INT COLOR:',POS=(9,45),ATTR=(PROT,BRT)
+         DFLD  INTCOLR,POS=(9,56),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'ENGINE:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  ENGTYPE,POS=(10,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TRANS:',POS=(10,40),ATTR=(PROT,BRT)
+         DFLD  TRANSMSN,POS=(10,47),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DRIVE:',POS=(10,60),ATTR=(PROT,BRT)
+         DFLD  DRVTRAN,POS=(10,67),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  'MSRP:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  MSRP,POS=(11,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'INVOICE:',POS=(11,42),ATTR=(PROT,BRT)
+         DFLD  INVOICE,POS=(11,51),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(12,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 13-20: RECEIVING FIELDS ---
+         DFLD  '--- RECEIVING INFORMATION ---',POS=(13,5),ATTR=(PROT,BRT)
+*
+         DFLD  'DEALER CODE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(14,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  DLRNAME,POS=(14,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'STOCK NUMBER:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  STKNUM,POS=(15,26),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'LOT LOCATION:',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  LOTLOC,POS=(16,26),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'ODOMETER:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  ODOMTR,POS=(17,26),LTH=7,ATTR=(PROT,NORM)
+*
+         DFLD  'DAMAGE FLAG:',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  DMGFLAG,POS=(18,26),LTH=1,ATTR=(PROT,NORM)
+*
+         DFLD  'DAMAGE DESC:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  DMGDESC,POS=(19,26),LTH=40,ATTR=(PROT,NORM)
+*
+         DFLD  'KEY NUMBER:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  KEYNBR,POS=(20,26),LTH=6,ATTR=(PROT,NORM)
+         DFLD  'RCV DATE:',POS=(20,40),ATTR=(PROT,BRT)
+         DFLD  RCVDATE,POS=(20,50),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=RECEIVE  PF6=UPDATE',                       X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

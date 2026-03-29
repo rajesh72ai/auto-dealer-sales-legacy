@@ -1,0 +1,221 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: WARRANTY REGISTRATION                             *
+*  TRANSACTION: AUTOWREG                                         *
+*  DESCRIPTION: Register factory warranties for sold vehicles    *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+WRCWRI   MID
+         SEG
+         MFLD  'AUTOWREG',LTH=8
+         MFLD  VINNUM,LTH=17
+         MFLD  DEALNUM,LTH=8
+         MFLD  W1STDT,LTH=10
+         MFLD  W1EXDT,LTH=10
+         MFLD  W1MLMT,LTH=7
+         MFLD  W1DEDU,LTH=6
+         MFLD  W2STDT,LTH=10
+         MFLD  W2EXDT,LTH=10
+         MFLD  W2MLMT,LTH=7
+         MFLD  W2DEDU,LTH=6
+         MFLD  W3STDT,LTH=10
+         MFLD  W3EXDT,LTH=10
+         MFLD  W3MLMT,LTH=7
+         MFLD  W3DEDU,LTH=6
+         MFLD  W4STDT,LTH=10
+         MFLD  W4EXDT,LTH=10
+         MFLD  W4MLMT,LTH=7
+         MFLD  W4DEDU,LTH=6
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+WRCWRO   MOD
+         SEG
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYMM,LTH=20)
+         MFLD  (DEALNUM,LTH=8)
+         MFLD  (CSNAME,LTH=25)
+         MFLD  (SLDATE,LTH=10)
+         MFLD  (W1TYPE,LTH=12)
+         MFLD  (W1STDT,LTH=10)
+         MFLD  (W1EXDT,LTH=10)
+         MFLD  (W1MLMT,LTH=7)
+         MFLD  (W1DEDU,LTH=6)
+         MFLD  (W2TYPE,LTH=12)
+         MFLD  (W2STDT,LTH=10)
+         MFLD  (W2EXDT,LTH=10)
+         MFLD  (W2MLMT,LTH=7)
+         MFLD  (W2DEDU,LTH=6)
+         MFLD  (W3TYPE,LTH=12)
+         MFLD  (W3STDT,LTH=10)
+         MFLD  (W3EXDT,LTH=10)
+         MFLD  (W3MLMT,LTH=7)
+         MFLD  (W3DEDU,LTH=6)
+         MFLD  (W4TYPE,LTH=12)
+         MFLD  (W4STDT,LTH=10)
+         MFLD  (W4EXDT,LTH=10)
+         MFLD  (W4MLMT,LTH=7)
+         MFLD  (W4DEDU,LTH=6)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+WRCWRDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,8))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      WARRANTY REGISTRATION',                  X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-6: VEHICLE / DEAL INFO ---
+         DFLD  'VIN:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(4,8),LTH=17,ATTR=(UNPROT,ALPHA)
+         DFLD  VHYMM,POS=(4,26),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'DEAL#:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(5,8),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  'CUSTOMER:',POS=(5,20),ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(5,30),LTH=25,ATTR=(PROT,NORM)
+*
+         DFLD  'SALE DATE:',POS=(6,1),ATTR=(PROT,NORM)
+         DFLD  SLDATE,POS=(6,12),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  '----------',POS=(7,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 8: WARRANTY COLUMN HEADERS ---
+         DFLD  'WARRANTY TYPE    START DATE  EXPIRY DATE  MILEAGE  DEDUCTIBLE',X
+               POS=(8,1),ATTR=(PROT,BRT)
+*
+* --- ROW 9: HEADER UNDERLINE ---
+         DFLD  '----------',POS=(9,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 10-13: BASIC WARRANTY ---
+         DFLD  W1TYPE,POS=(10,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W1STDT,POS=(10,18),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W1EXDT,POS=(10,30),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W1MLMT,POS=(10,43),LTH=7,ATTR=(UNPROT,NUM)
+         DFLD  W1DEDU,POS=(10,53),LTH=6,ATTR=(UNPROT,NUM)
+*
+* --- ROW 11: POWERTRAIN WARRANTY ---
+         DFLD  W2TYPE,POS=(11,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W2STDT,POS=(11,18),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W2EXDT,POS=(11,30),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W2MLMT,POS=(11,43),LTH=7,ATTR=(UNPROT,NUM)
+         DFLD  W2DEDU,POS=(11,53),LTH=6,ATTR=(UNPROT,NUM)
+*
+* --- ROW 12: CORROSION WARRANTY ---
+         DFLD  W3TYPE,POS=(12,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W3STDT,POS=(12,18),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W3EXDT,POS=(12,30),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W3MLMT,POS=(12,43),LTH=7,ATTR=(UNPROT,NUM)
+         DFLD  W3DEDU,POS=(12,53),LTH=6,ATTR=(UNPROT,NUM)
+*
+* --- ROW 13: EMISSION WARRANTY ---
+         DFLD  W4TYPE,POS=(13,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W4STDT,POS=(13,18),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W4EXDT,POS=(13,30),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  W4MLMT,POS=(13,43),LTH=7,ATTR=(UNPROT,NUM)
+         DFLD  W4DEDU,POS=(13,53),LTH=6,ATTR=(UNPROT,NUM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=REGISTER',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+WRCWRDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,8))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      WARRANTY REGISTRATION',                  X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-6: VEHICLE / DEAL INFO ---
+         DFLD  'VIN:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(4,8),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(4,26),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'DEAL#:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(5,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'CUSTOMER:',POS=(5,20),ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(5,30),LTH=25,ATTR=(PROT,NORM)
+*
+         DFLD  'SALE DATE:',POS=(6,1),ATTR=(PROT,NORM)
+         DFLD  SLDATE,POS=(6,12),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  '----------',POS=(7,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 8: WARRANTY COLUMN HEADERS ---
+         DFLD  'WARRANTY TYPE    START DATE  EXPIRY DATE  MILEAGE  DEDUCTIBLE',X
+               POS=(8,1),ATTR=(PROT,BRT)
+*
+* --- ROW 9: HEADER UNDERLINE ---
+         DFLD  '----------',POS=(9,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROWS 10-13: WARRANTY LINES ---
+         DFLD  W1TYPE,POS=(10,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W1STDT,POS=(10,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W1EXDT,POS=(10,30),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W1MLMT,POS=(10,43),LTH=7,ATTR=(PROT,NORM)
+         DFLD  W1DEDU,POS=(10,53),LTH=6,ATTR=(PROT,NORM)
+*
+         DFLD  W2TYPE,POS=(11,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W2STDT,POS=(11,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W2EXDT,POS=(11,30),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W2MLMT,POS=(11,43),LTH=7,ATTR=(PROT,NORM)
+         DFLD  W2DEDU,POS=(11,53),LTH=6,ATTR=(PROT,NORM)
+*
+         DFLD  W3TYPE,POS=(12,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W3STDT,POS=(12,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W3EXDT,POS=(12,30),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W3MLMT,POS=(12,43),LTH=7,ATTR=(PROT,NORM)
+         DFLD  W3DEDU,POS=(12,53),LTH=6,ATTR=(PROT,NORM)
+*
+         DFLD  W4TYPE,POS=(13,1),LTH=12,ATTR=(PROT,BRT)
+         DFLD  W4STDT,POS=(13,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W4EXDT,POS=(13,30),LTH=10,ATTR=(PROT,NORM)
+         DFLD  W4MLMT,POS=(13,43),LTH=7,ATTR=(PROT,NORM)
+         DFLD  W4DEDU,POS=(13,53),LTH=6,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=REGISTER',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

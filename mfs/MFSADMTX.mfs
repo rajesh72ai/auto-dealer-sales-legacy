@@ -1,0 +1,233 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: TAX RATE MAINTENANCE                              *
+*  TRANSACTION: AUTOTAX                                          *
+*  DESCRIPTION: Add/update state/county/city tax and fee rates   *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+ADMTXI   MID
+         SEG
+         MFLD  'AUTOTAX ',LTH=8
+         MFLD  ACTEFLAG,LTH=1
+         MFLD  STCODE,LTH=2
+         MFLD  CNTYCD,LTH=3
+         MFLD  CITYCD,LTH=4
+         MFLD  STRATE,LTH=6
+         MFLD  CNTYRT,LTH=6
+         MFLD  CITYRT,LTH=6
+         MFLD  DOCMAX,LTH=8
+         MFLD  TITLFEE,LTH=8
+         MFLD  REGFEE,LTH=8
+         MFLD  EFFDATE,LTH=10
+         MFLD  EXPDATE,LTH=10
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+ADMTXO   MOD
+         SEG
+         MFLD  (ACTEFLAG,LTH=1)
+         MFLD  (STCODE,LTH=2)
+         MFLD  (STNAME,LTH=20)
+         MFLD  (CNTYCD,LTH=3)
+         MFLD  (CNTYNAM,LTH=20)
+         MFLD  (CITYCD,LTH=4)
+         MFLD  (CITYNAM,LTH=20)
+         MFLD  (STRATE,LTH=6)
+         MFLD  (CNTYRT,LTH=6)
+         MFLD  (CITYRT,LTH=6)
+         MFLD  (TOTRATE,LTH=6)
+         MFLD  (DOCMAX,LTH=8)
+         MFLD  (TITLFEE,LTH=8)
+         MFLD  (REGFEE,LTH=8)
+         MFLD  (EFFDATE,LTH=10)
+         MFLD  (EXPDATE,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+ADMTXDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      TAX RATE MAINTENANCE',                 X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  '(A=ADD, U=UPDATE, I=INQUIRE)',                               X
+               POS=(4,29),ATTR=(PROT,NORM)
+*
+* --- ROWS 5-9: JURISDICTION ---
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+         DFLD  '--- JURISDICTION ---',POS=(5,5),ATTR=(PROT,BRT)
+*
+         DFLD  'STATE CODE:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  STCODE,POS=(6,26),LTH=2,ATTR=(UNPROT,ALPHA)
+         DFLD  STNAME,POS=(6,30),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'COUNTY CODE:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  CNTYCD,POS=(7,26),LTH=3,ATTR=(UNPROT,ALPHA)
+         DFLD  CNTYNAM,POS=(7,31),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'CITY CODE:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  CITYCD,POS=(8,26),LTH=4,ATTR=(UNPROT,ALPHA)
+         DFLD  CITYNAM,POS=(8,32),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROWS 10-14: TAX RATES ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+         DFLD  '--- TAX RATES ---',POS=(10,5),ATTR=(PROT,BRT)
+*
+         DFLD  'STATE RATE:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  STRATE,POS=(11,26),LTH=6,ATTR=(UNPROT,NUM)
+         DFLD  '%',POS=(11,33),ATTR=(PROT,NORM)
+*
+         DFLD  'COUNTY RATE:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  CNTYRT,POS=(12,26),LTH=6,ATTR=(UNPROT,NUM)
+         DFLD  '%',POS=(12,33),ATTR=(PROT,NORM)
+*
+         DFLD  'CITY RATE:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  CITYRT,POS=(13,26),LTH=6,ATTR=(UNPROT,NUM)
+         DFLD  '%',POS=(13,33),ATTR=(PROT,NORM)
+*
+         DFLD  'TOTAL RATE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  TOTRATE,POS=(14,26),LTH=6,ATTR=(PROT,NORM)
+         DFLD  '%',POS=(14,33),ATTR=(PROT,NORM)
+*
+* --- ROWS 15-18: FEES ---
+         DFLD  ' ',POS=(15,1),ATTR=(PROT,NORM)
+         DFLD  '--- FEES ---',POS=(16,5),ATTR=(PROT,BRT)
+*
+         DFLD  'DOC FEE MAX:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  DOCMAX,POS=(17,26),LTH=8,ATTR=(UNPROT,NUM)
+*
+         DFLD  'TITLE FEE:',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  TITLFEE,POS=(18,26),LTH=8,ATTR=(UNPROT,NUM)
+*
+         DFLD  'REGISTRATION FEE:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  REGFEE,POS=(19,26),LTH=8,ATTR=(UNPROT,NUM)
+*
+* --- ROWS 20-21: EFFECTIVE DATES ---
+         DFLD  'EFFECTIVE DATE:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  EFFDATE,POS=(20,26),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  '(MM/DD/YYYY)',POS=(20,38),ATTR=(PROT,NORM)
+*
+         DFLD  'EXPIRY DATE:',POS=(21,5),ATTR=(PROT,BRT)
+         DFLD  EXPDATE,POS=(21,26),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  '(MM/DD/YYYY)',POS=(21,38),ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE',                           X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+ADMTXDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      TAX RATE MAINTENANCE',                 X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,26),LTH=1,ATTR=(PROT,NORM)
+*
+* --- ROWS 5-8: JURISDICTION ---
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+         DFLD  '--- JURISDICTION ---',POS=(5,5),ATTR=(PROT,BRT)
+*
+         DFLD  'STATE CODE:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  STCODE,POS=(6,26),LTH=2,ATTR=(PROT,NORM)
+         DFLD  STNAME,POS=(6,30),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'COUNTY CODE:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  CNTYCD,POS=(7,26),LTH=3,ATTR=(PROT,NORM)
+         DFLD  CNTYNAM,POS=(7,31),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'CITY CODE:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  CITYCD,POS=(8,26),LTH=4,ATTR=(PROT,NORM)
+         DFLD  CITYNAM,POS=(8,32),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROWS 10-14: TAX RATES ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+         DFLD  '--- TAX RATES ---',POS=(10,5),ATTR=(PROT,BRT)
+*
+         DFLD  'STATE RATE:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  STRATE,POS=(11,26),LTH=6,ATTR=(PROT,NORM)
+         DFLD  '%',POS=(11,33),ATTR=(PROT,NORM)
+*
+         DFLD  'COUNTY RATE:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  CNTYRT,POS=(12,26),LTH=6,ATTR=(PROT,NORM)
+         DFLD  '%',POS=(12,33),ATTR=(PROT,NORM)
+*
+         DFLD  'CITY RATE:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  CITYRT,POS=(13,26),LTH=6,ATTR=(PROT,NORM)
+         DFLD  '%',POS=(13,33),ATTR=(PROT,NORM)
+*
+         DFLD  'TOTAL RATE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  TOTRATE,POS=(14,26),LTH=6,ATTR=(PROT,NORM)
+         DFLD  '%',POS=(14,33),ATTR=(PROT,NORM)
+*
+* --- ROWS 16-19: FEES ---
+         DFLD  ' ',POS=(15,1),ATTR=(PROT,NORM)
+         DFLD  '--- FEES ---',POS=(16,5),ATTR=(PROT,BRT)
+*
+         DFLD  'DOC FEE MAX:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  DOCMAX,POS=(17,26),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'TITLE FEE:',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  TITLFEE,POS=(18,26),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'REGISTRATION FEE:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  REGFEE,POS=(19,26),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROWS 20-21: EFFECTIVE DATES ---
+         DFLD  'EFFECTIVE DATE:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  EFFDATE,POS=(20,26),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'EXPIRY DATE:',POS=(21,5),ATTR=(PROT,BRT)
+         DFLD  EXPDATE,POS=(21,26),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE',                           X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

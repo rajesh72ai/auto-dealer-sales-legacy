@@ -1,0 +1,157 @@
+PROC 0
+/*********************************************************************/
+/* ASMENU - AUTOSALES Main Menu CLIST                                */
+/*                                                                   */
+/* Description: Displays AUTOSALES main menu panel. Allows user to   */
+/*              select batch submission, reports, status checking,    */
+/*              DB2 utilities, IMS utilities, backup, or exit.        */
+/*              Calls appropriate REXX exec based on selection.       */
+/*                                                                   */
+/* Usage:       TSO ASMENU                                           */
+/*                                                                   */
+/* Author:      AUTOSALES Development Team                           */
+/* System:      AUTOSALES - IMS DC/COBOL/DB2 z/OS                   */
+/*********************************************************************/
+CONTROL NOFLUSH NOMSG
+ERROR DO
+  SET &ERRRC = &LASTCC
+  WRITE *** ASMENU error. RC=&ERRRC
+  RETURN
+END
+
+SET &REXXLIB = &STR(AUTOSALE.REXX)
+SET &PANLLIB = &STR(AUTOSALE.PANELS)
+
+/*---------------------------------------------------------------*/
+/* Attempt to use ISPF panel if available                        */
+/*---------------------------------------------------------------*/
+SET &USEPANEL = &STR(Y)
+ISPEXEC LIBDEF ISPPLIB DATASET ID('&PANLLIB') STACK
+IF &LASTCC > 0 THEN +
+  SET &USEPANEL = &STR(N)
+
+/*---------------------------------------------------------------*/
+/* Main processing loop                                          */
+/*---------------------------------------------------------------*/
+SET &EXIT = &STR(N)
+DO WHILE &EXIT = &STR(N)
+
+  IF &USEPANEL = &STR(Y) THEN DO
+    SET &SEL =
+    ISPEXEC DISPLAY PANEL(ASMAINP)
+    IF &LASTCC > 8 THEN DO
+      SET &EXIT = &STR(Y)
+      GOTO ENDLOOP
+    END
+  END
+  ELSE DO
+    /*-----------------------------------------------------------*/
+    /* Text-based menu when ISPF panels not available            */
+    /*-----------------------------------------------------------*/
+    WRITE
+    WRITE ============================================================
+    WRITE    AUTOSALES - Automotive Dealer Sales System
+    WRITE    Main Menu
+    WRITE ============================================================
+    WRITE
+    WRITE    1. Submit Batch Job
+    WRITE    2. View Reports
+    WRITE    3. Check Job Status
+    WRITE    4. DB2 Utilities
+    WRITE    5. IMS Utilities
+    WRITE    6. Backup Management
+    WRITE    7. VIN Lookup
+    WRITE    8. Dealer Dashboard
+    WRITE    9. Source Edit
+    WRITE   10. Compile Program
+    WRITE   11. Environment Migration
+    WRITE    X. Exit
+    WRITE
+    WRITE ------------------------------------------------------------
+    WRITENR  Enter selection:
+    READ &SEL
+  END
+
+  /*-------------------------------------------------------------*/
+  /* Process selection                                           */
+  /*-------------------------------------------------------------*/
+  IF &SEL = &STR(X) | &SEL = &STR(x) THEN DO
+    SET &EXIT = &STR(Y)
+    GOTO ENDLOOP
+  END
+
+  SELECT (&SEL)
+    WHEN (1) DO
+      WRITE  Launching Job Submission Helper...
+      EXEC '&REXXLIB(ASSUBMIT)' EXEC
+    END
+
+    WHEN (2) DO
+      WRITE  Launching Report Browser...
+      %ASBROWSE
+    END
+
+    WHEN (3) DO
+      WRITE  Launching Job Status Monitor...
+      EXEC '&REXXLIB(ASSTATUS)' EXEC
+    END
+
+    WHEN (4) DO
+      WRITE  Launching DB2 Health Check...
+      EXEC '&REXXLIB(ASDBCHK)' EXEC
+    END
+
+    WHEN (5) DO
+      WRITE  Launching IMS Health Check...
+      EXEC '&REXXLIB(ASIMSCHK)' EXEC
+    END
+
+    WHEN (6) DO
+      WRITE  Launching Backup Orchestrator...
+      EXEC '&REXXLIB(ASBACKUP)' EXEC
+    END
+
+    WHEN (7) DO
+      WRITE  Launching VIN Lookup...
+      EXEC '&REXXLIB(ASVINLKP)' EXEC
+    END
+
+    WHEN (8) DO
+      WRITE  Launching Dealer Dashboard...
+      EXEC '&REXXLIB(ASDEALER)' EXEC
+    END
+
+    WHEN (9) DO
+      WRITE  Launching Source Editor...
+      %ASEDIT
+    END
+
+    WHEN (10) DO
+      WRITE  Launching Compile & Link...
+      %ASCOMPIL
+    END
+
+    WHEN (11) DO
+      WRITE  Launching Environment Migration...
+      EXEC '&REXXLIB(ASMIGRTE)' EXEC
+    END
+
+    OTHERWISE DO
+      WRITE  *** Invalid selection: &SEL
+    END
+  END
+
+  ENDLOOP: +
+
+END
+
+/*---------------------------------------------------------------*/
+/* Cleanup                                                       */
+/*---------------------------------------------------------------*/
+IF &USEPANEL = &STR(Y) THEN +
+  ISPEXEC LIBDEF ISPPLIB
+
+WRITE
+WRITE  AUTOSALES session ended.
+WRITE
+EXIT CODE(0)

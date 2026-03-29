@@ -1,0 +1,298 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: STOCK RECONCILIATION                              *
+*  TRANSACTION: AUTOrec                                          *
+*  DESCRIPTION: Reconcile physical inventory vs system counts    *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+STRKCI   MID
+         SEG
+         MFLD  'AUTOREC ',LTH=8
+         MFLD  DLRCODE,LTH=5
+         MFLD  RECDATE,LTH=10
+*        UP TO 10 PHYSICAL COUNT ENTRIES
+         MFLD  PHYS01,LTH=5
+         MFLD  PHYS02,LTH=5
+         MFLD  PHYS03,LTH=5
+         MFLD  PHYS04,LTH=5
+         MFLD  PHYS05,LTH=5
+         MFLD  PHYS06,LTH=5
+         MFLD  PHYS07,LTH=5
+         MFLD  PHYS08,LTH=5
+         MFLD  PHYS09,LTH=5
+         MFLD  PHYS10,LTH=5
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+STRKCO   MOD
+         SEG
+         MFLD  (DLRCODE,LTH=5)
+         MFLD  (DLRNAME,LTH=30)
+         MFLD  (RECDATE,LTH=10)
+*        10 RECONCILIATION LINES
+         MFLD  (RMDL01,LTH=20)
+         MFLD  (RSYS01,LTH=5)
+         MFLD  (RPHY01,LTH=5)
+         MFLD  (RVAR01,LTH=5)
+         MFLD  (RMDL02,LTH=20)
+         MFLD  (RSYS02,LTH=5)
+         MFLD  (RPHY02,LTH=5)
+         MFLD  (RVAR02,LTH=5)
+         MFLD  (RMDL03,LTH=20)
+         MFLD  (RSYS03,LTH=5)
+         MFLD  (RPHY03,LTH=5)
+         MFLD  (RVAR03,LTH=5)
+         MFLD  (RMDL04,LTH=20)
+         MFLD  (RSYS04,LTH=5)
+         MFLD  (RPHY04,LTH=5)
+         MFLD  (RVAR04,LTH=5)
+         MFLD  (RMDL05,LTH=20)
+         MFLD  (RSYS05,LTH=5)
+         MFLD  (RPHY05,LTH=5)
+         MFLD  (RVAR05,LTH=5)
+         MFLD  (RMDL06,LTH=20)
+         MFLD  (RSYS06,LTH=5)
+         MFLD  (RPHY06,LTH=5)
+         MFLD  (RVAR06,LTH=5)
+         MFLD  (RMDL07,LTH=20)
+         MFLD  (RSYS07,LTH=5)
+         MFLD  (RPHY07,LTH=5)
+         MFLD  (RVAR07,LTH=5)
+         MFLD  (RMDL08,LTH=20)
+         MFLD  (RSYS08,LTH=5)
+         MFLD  (RPHY08,LTH=5)
+         MFLD  (RVAR08,LTH=5)
+         MFLD  (RMDL09,LTH=20)
+         MFLD  (RSYS09,LTH=5)
+         MFLD  (RPHY09,LTH=5)
+         MFLD  (RVAR09,LTH=5)
+         MFLD  (RMDL10,LTH=20)
+         MFLD  (RSYS10,LTH=5)
+         MFLD  (RPHY10,LTH=5)
+         MFLD  (RVAR10,LTH=5)
+*        TOTALS
+         MFLD  (TSYSCNT,LTH=6)
+         MFLD  (TPHYCNT,LTH=6)
+         MFLD  (TVARCNT,LTH=6)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+STRKCDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      STOCK RECONCILIATION',                 X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-5: HEADER FIELDS ---
+         DFLD  'DEALER CODE:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(4,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  DLRNAME,POS=(4,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'RECON DATE:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  RECDATE,POS=(5,26),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  '(MM/DD/YYYY)',POS=(5,38),ATTR=(PROT,NORM)
+*
+* --- ROW 6: SEPARATOR ---
+         DFLD  ' ',POS=(6,1),ATTR=(PROT,NORM)
+*
+* --- ROW 7-8: COLUMN HEADERS ---
+         DFLD  'MODEL                SYSTEM  PHYSICAL  VARIANCE',            X
+               POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  '-------------------  ------  --------  --------',            X
+               POS=(8,5),ATTR=(PROT,NORM)
+*
+* --- ROWS 9-18: RECONCILIATION LINES (10 MODELS) ---
+         DFLD  RMDL01,POS=(9,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS01,POS=(9,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS01,POS=(9,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR01,POS=(9,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL02,POS=(10,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS02,POS=(10,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS02,POS=(10,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR02,POS=(10,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL03,POS=(11,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS03,POS=(11,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS03,POS=(11,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR03,POS=(11,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL04,POS=(12,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS04,POS=(12,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS04,POS=(12,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR04,POS=(12,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL05,POS=(13,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS05,POS=(13,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS05,POS=(13,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR05,POS=(13,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL06,POS=(14,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS06,POS=(14,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS06,POS=(14,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR06,POS=(14,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL07,POS=(15,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS07,POS=(15,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS07,POS=(15,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR07,POS=(15,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL08,POS=(16,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS08,POS=(16,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS08,POS=(16,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR08,POS=(16,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL09,POS=(17,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS09,POS=(17,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS09,POS=(17,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR09,POS=(17,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL10,POS=(18,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS10,POS=(18,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  PHYS10,POS=(18,34),LTH=5,ATTR=(UNPROT,NUM)
+         DFLD  RVAR10,POS=(18,44),LTH=5,ATTR=(PROT,NORM)
+*
+* --- ROW 19: SEPARATOR ---
+         DFLD  '-------------------  ------  --------  --------',            X
+               POS=(19,5),ATTR=(PROT,NORM)
+*
+* --- ROW 20: TOTALS ---
+         DFLD  'TOTALS',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  TSYSCNT,POS=(20,25),LTH=6,ATTR=(PROT,BRT)
+         DFLD  TPHYCNT,POS=(20,33),LTH=6,ATTR=(PROT,BRT)
+         DFLD  TVARCNT,POS=(20,43),LTH=6,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ACCEPT COUNTS  PF6=PRINT',                  X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+STRKCDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      STOCK RECONCILIATION',                 X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-5: HEADER ---
+         DFLD  'DEALER CODE:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(4,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  DLRNAME,POS=(4,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'RECON DATE:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  RECDATE,POS=(5,26),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(6,1),ATTR=(PROT,NORM)
+*
+* --- ROW 7-8: COLUMN HEADERS ---
+         DFLD  'MODEL                SYSTEM  PHYSICAL  VARIANCE',            X
+               POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  '-------------------  ------  --------  --------',            X
+               POS=(8,5),ATTR=(PROT,NORM)
+*
+* --- ROWS 9-18: RECONCILIATION LINES ---
+         DFLD  RMDL01,POS=(9,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS01,POS=(9,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY01,POS=(9,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR01,POS=(9,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL02,POS=(10,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS02,POS=(10,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY02,POS=(10,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR02,POS=(10,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL03,POS=(11,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS03,POS=(11,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY03,POS=(11,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR03,POS=(11,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL04,POS=(12,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS04,POS=(12,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY04,POS=(12,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR04,POS=(12,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL05,POS=(13,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS05,POS=(13,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY05,POS=(13,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR05,POS=(13,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL06,POS=(14,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS06,POS=(14,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY06,POS=(14,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR06,POS=(14,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL07,POS=(15,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS07,POS=(15,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY07,POS=(15,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR07,POS=(15,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL08,POS=(16,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS08,POS=(16,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY08,POS=(16,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR08,POS=(16,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL09,POS=(17,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS09,POS=(17,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY09,POS=(17,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR09,POS=(17,44),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  RMDL10,POS=(18,5),LTH=20,ATTR=(PROT,NORM)
+         DFLD  RSYS10,POS=(18,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RPHY10,POS=(18,34),LTH=5,ATTR=(PROT,NORM)
+         DFLD  RVAR10,POS=(18,44),LTH=5,ATTR=(PROT,NORM)
+*
+* --- ROW 19: SEPARATOR ---
+         DFLD  '-------------------  ------  --------  --------',            X
+               POS=(19,5),ATTR=(PROT,NORM)
+*
+* --- ROW 20: TOTALS ---
+         DFLD  'TOTALS',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  TSYSCNT,POS=(20,25),LTH=6,ATTR=(PROT,BRT)
+         DFLD  TPHYCNT,POS=(20,33),LTH=6,ATTR=(PROT,BRT)
+         DFLD  TVARCNT,POS=(20,43),LTH=6,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ACCEPT COUNTS  PF6=PRINT',                  X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

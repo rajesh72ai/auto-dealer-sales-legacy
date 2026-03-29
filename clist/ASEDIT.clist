@@ -1,0 +1,155 @@
+PROC 0 TYPE() MEMBER()
+/*********************************************************************/
+/* ASEDIT - AUTOSALES Source Edit Helper                              */
+/*                                                                   */
+/* Description: Opens AUTOSALES source library members for editing.  */
+/*              Prompts for member type (COBOL, COPY, JCL, MFS).     */
+/*              Navigates to correct PDS based on type. Sets ISPF    */
+/*              edit profile for COBOL (COLS 7 72, CAPS ON).         */
+/*                                                                   */
+/* Usage:       TSO %ASEDIT                                          */
+/*              TSO %ASEDIT TYPE(COBOL) MEMBER(BATDLY00)            */
+/*                                                                   */
+/* Author:      AUTOSALES Development Team                           */
+/* System:      AUTOSALES - IMS DC/COBOL/DB2 z/OS                   */
+/*********************************************************************/
+CONTROL NOFLUSH NOMSG
+ERROR DO
+  SET &ERRRC = &LASTCC
+  WRITE *** ASEDIT error. RC=&ERRRC
+  RETURN
+END
+
+/*---------------------------------------------------------------*/
+/* Dataset HLQ - adjust per environment                          */
+/*---------------------------------------------------------------*/
+SET &HLQ = &STR(AUTOSALE)
+
+/*---------------------------------------------------------------*/
+/* Define library mappings for each source type                  */
+/*---------------------------------------------------------------*/
+SET &DSN_COBOL = &STR(&HLQ..COBOL)
+SET &DSN_COPY  = &STR(&HLQ..COPYLIB)
+SET &DSN_JCL   = &STR(&HLQ..JCL)
+SET &DSN_MFS   = &STR(&HLQ..MFS)
+SET &DSN_REXX  = &STR(&HLQ..REXX)
+SET &DSN_CLIST = &STR(&HLQ..CLIST)
+SET &DSN_DBRM  = &STR(&HLQ..DBRM)
+SET &DSN_DDL   = &STR(&HLQ..DDL)
+
+/*---------------------------------------------------------------*/
+/* Prompt for type if not provided                               */
+/*---------------------------------------------------------------*/
+IF &TYPE = THEN DO
+  WRITE
+  WRITE ============================================================
+  WRITE    AUTOSALES - Source Edit Helper
+  WRITE ============================================================
+  WRITE
+  WRITE    Select source type:
+  WRITE
+  WRITE    1. COBOL   - COBOL source programs
+  WRITE    2. COPY    - COBOL copybooks
+  WRITE    3. JCL     - Job Control Language
+  WRITE    4. MFS     - MFS screen definitions
+  WRITE    5. REXX    - REXX exec scripts
+  WRITE    6. CLIST   - CLIST procedures
+  WRITE    7. DBRM    - DB2 DBRMs
+  WRITE    8. DDL     - DB2 DDL scripts
+  WRITE
+  WRITENR  Enter selection (1-8):
+  READ &TYPESEL
+
+  SELECT (&TYPESEL)
+    WHEN (1) SET &TYPE = &STR(COBOL)
+    WHEN (2) SET &TYPE = &STR(COPY)
+    WHEN (3) SET &TYPE = &STR(JCL)
+    WHEN (4) SET &TYPE = &STR(MFS)
+    WHEN (5) SET &TYPE = &STR(REXX)
+    WHEN (6) SET &TYPE = &STR(CLIST)
+    WHEN (7) SET &TYPE = &STR(DBRM)
+    WHEN (8) SET &TYPE = &STR(DDL)
+    OTHERWISE DO
+      WRITE *** Invalid type selection: &TYPESEL
+      EXIT CODE(8)
+    END
+  END
+END
+
+/*---------------------------------------------------------------*/
+/* Resolve dataset name from type                                */
+/*---------------------------------------------------------------*/
+SELECT (&TYPE)
+  WHEN (COBOL) SET &EDITDSN = &STR(&DSN_COBOL)
+  WHEN (COPY)  SET &EDITDSN = &STR(&DSN_COPY)
+  WHEN (JCL)   SET &EDITDSN = &STR(&DSN_JCL)
+  WHEN (MFS)   SET &EDITDSN = &STR(&DSN_MFS)
+  WHEN (REXX)  SET &EDITDSN = &STR(&DSN_REXX)
+  WHEN (CLIST) SET &EDITDSN = &STR(&DSN_CLIST)
+  WHEN (DBRM)  SET &EDITDSN = &STR(&DSN_DBRM)
+  WHEN (DDL)   SET &EDITDSN = &STR(&DSN_DDL)
+  OTHERWISE DO
+    WRITE *** Unknown source type: &TYPE
+    WRITE *** Valid types: COBOL, COPY, JCL, MFS, REXX, CLIST, DBRM, DDL
+    EXIT CODE(8)
+  END
+END
+
+/*---------------------------------------------------------------*/
+/* If no member specified, show member list                      */
+/*---------------------------------------------------------------*/
+IF &MEMBER = THEN DO
+  WRITE
+  WRITE  Opening member list for &EDITDSN ...
+  WRITE
+  ISPEXEC BROWSE DATASET('&EDITDSN')
+  IF &LASTCC > 0 THEN DO
+    WRITE *** Could not open dataset: &EDITDSN
+    EXIT CODE(8)
+  END
+
+  WRITE
+  WRITENR  Enter member name to edit (or ENTER to exit):
+  READ &MEMBER
+  IF &MEMBER = THEN DO
+    WRITE  No member selected. Exiting.
+    EXIT CODE(0)
+  END
+END
+
+/*---------------------------------------------------------------*/
+/* Set ISPF edit profile based on source type                    */
+/*---------------------------------------------------------------*/
+IF &TYPE = COBOL THEN DO
+  /* COBOL: columns 7-72, CAPS ON, COBOL number mode */
+  ISPEXEC EDIT DATASET('&EDITDSN(&MEMBER)') MACRO(ASCOBED)
+  IF &LASTCC > 4 THEN DO
+    /* Fallback: edit without macro */
+    WRITE  (Edit macro not found - opening with defaults)
+    ISPEXEC EDIT DATASET('&EDITDSN(&MEMBER)')
+  END
+END
+ELSE IF &TYPE = COPY THEN DO
+  /* Copybooks: same COBOL settings */
+  ISPEXEC EDIT DATASET('&EDITDSN(&MEMBER)') MACRO(ASCOBED)
+  IF &LASTCC > 4 THEN +
+    ISPEXEC EDIT DATASET('&EDITDSN(&MEMBER)')
+END
+ELSE IF &TYPE = JCL THEN DO
+  /* JCL: columns 1-72 */
+  ISPEXEC EDIT DATASET('&EDITDSN(&MEMBER)')
+END
+ELSE DO
+  /* All others: default edit */
+  ISPEXEC EDIT DATASET('&EDITDSN(&MEMBER)')
+END
+
+SET &EDITRC = &LASTCC
+IF &EDITRC = 0 THEN +
+  WRITE  Edit session completed for &EDITDSN(&MEMBER).
+ELSE IF &EDITRC = 4 THEN +
+  WRITE  Member &MEMBER saved.
+ELSE +
+  WRITE  *** Edit ended. RC=&EDITRC
+
+EXIT CODE(0)

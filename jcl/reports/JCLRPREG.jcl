@@ -1,0 +1,56 @@
+//*********************************************************************
+//* JCL:      JCLRPREG
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  REGISTRATION AND TITLE REPORT
+//*           RUNS RPTREG00 - PENDING REGISTRATIONS, TITLE STATUS,
+//*           OVERDUE TITLES, DMV SUBMISSION TRACKING
+//* SCHEDULE: DAILY 08:00 CST
+//* OVERRIDE: CHANGE PARM DATE FOR HISTORICAL RERUN
+//*********************************************************************
+//AUTOSLRA JOB (ACCT),'AUTOSALES-RPREG',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//RPTOUT   OUTPUT JESDS=ALL,CLASS=A,
+//         DEST=LOCAL,COPIES=1,
+//         FORMS=STD132
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE REGISTRATION/TITLE REPORT (IMS BMP)
+//*-------------------------------------------------------------------
+//RPTREG   EXEC IMSBATCH,MBR=RPTREG00,
+//         PSB=PSBRPT01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD DSN=AUTOSALE.PROD.REPORT.REGTITLE(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(10,5),RLSE),
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//SYSIN    DD *
+  REPORT-DATE=&LYYMMDD
+  INCLUDE-OVERDUE=Y
+  OVERDUE-DAYS=30
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - PRINT REPORT
+//*-------------------------------------------------------------------
+//PRINT    EXEC PGM=IEBGENER,COND=(4,LT,RPTREG)
+//SYSUT1   DD DSN=AUTOSALE.PROD.REPORT.REGTITLE(&LYYMMDD),DISP=SHR
+//SYSUT2   DD SYSOUT=A,OUTPUT=*.RPTOUT,
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//

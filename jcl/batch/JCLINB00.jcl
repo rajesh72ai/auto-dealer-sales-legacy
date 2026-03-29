@@ -1,0 +1,110 @@
+//*********************************************************************
+//* JCL:      JCLINB00
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  INBOUND FEED PROCESSING
+//*           1. SORT/VALIDATE INCOMING OEM VEHICLE ALLOCATION FILE
+//*           2. EXECUTE BATINB00 - LOAD NEW VEHICLES, PRODUCTION
+//*              ORDERS, SHIPMENTS, RECALL CAMPAIGNS
+//* SCHEDULE: DAILY 14:00 CST (TRIGGERED BY FTP ARRIVAL)
+//* ON ERROR: NOTIFY OPERATIONS AND OEM LIAISON
+//*********************************************************************
+//AUTOSLI0 JOB (ACCT),'AUTOSALES-INBOUND',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - VALIDATE INBOUND FILE STRUCTURE AND SORT
+//*-------------------------------------------------------------------
+//SORTVAL  EXEC PGM=ICETOOL
+//TOOLMSG  DD SYSOUT=*
+//DFSMSG   DD SYSOUT=*
+//INRAW    DD DSN=AUTOSALE.PROD.INBOUND.OEMFEED,DISP=SHR
+//OUTVAL   DD DSN=AUTOSALE.WORK.INBOUND.VALID,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(50,20),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//OUTREJ   DD DSN=AUTOSALE.WORK.INBOUND.REJECT,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//OUTRPT   DD SYSOUT=*
+//TOOLIN   DD *
+  SORT FROM(INRAW) TO(OUTVAL) USING(VALD)
+  COUNT FROM(INRAW) WRITE(OUTRPT) TEXT('INPUT  RECORDS: ')
+  COUNT FROM(OUTVAL) WRITE(OUTRPT) TEXT('VALID  RECORDS: ')
+  COUNT FROM(OUTREJ) WRITE(OUTRPT) TEXT('REJECT RECORDS: ')
+/*
+//VALDCNTL DD *
+  SORT FIELDS=(1,2,CH,A,3,17,CH,A)
+  INCLUDE COND=(1,2,CH,EQ,C'VH',OR,
+                1,2,CH,EQ,C'PO',OR,
+                1,2,CH,EQ,C'SH',OR,
+                1,2,CH,EQ,C'RC')
+  INREC IFTHEN=(WHEN=(1,2,CH,EQ,C'VH',AND,20,17,CH,NE,C'                 '),
+                BUILD=(1,500)),
+        IFTHEN=(WHEN=NONE,
+                BUILD=(1,500))
+  SAVE
+  OUTFIL FNAMES=OUTREJ,SAVE
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - CHECK REJECT COUNT - FAIL IF > 5%
+//*-------------------------------------------------------------------
+//REJCHECK EXEC PGM=ICETOOL
+//TOOLMSG  DD SYSOUT=*
+//DFSMSG   DD SYSOUT=*
+//INREJ    DD DSN=AUTOSALE.WORK.INBOUND.REJECT,DISP=SHR
+//TOOLIN   DD *
+  COUNT FROM(INREJ) EMPTY HIGHER(1000) RC4
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP030 - EXECUTE INBOUND FEED BATCH (IMS BMP)
+//*-------------------------------------------------------------------
+//INBOUND  EXEC IMSBATCH,MBR=BATINB00,
+//         PSB=PSBBAT01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2),
+//         COND=(4,LT,REJCHECK)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//INFILE   DD DSN=AUTOSALE.WORK.INBOUND.VALID,DISP=SHR
+//CTLCARD  DD *
+  PROCESS-DATE=&LYYMMDD
+  CHECKPOINT-FREQ=500
+  DUPLICATE-ACTION=SKIP
+  ERROR-THRESHOLD=50
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP040 - ARCHIVE RAW INPUT AND CLEANUP
+//*-------------------------------------------------------------------
+//ARCHIVE  EXEC PGM=IEBGENER,COND=(4,LT,INBOUND)
+//SYSUT1   DD DSN=AUTOSALE.PROD.INBOUND.OEMFEED,DISP=SHR
+//SYSUT2   DD DSN=AUTOSALE.PROD.ARCHIVE.INBOUND(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(50,10),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//*
+//CLEANUP  EXEC PGM=IEFBR14,COND=(4,LT,INBOUND)
+//DEL1     DD DSN=AUTOSALE.WORK.INBOUND.VALID,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL2     DD DSN=AUTOSALE.WORK.INBOUND.REJECT,
+//         DISP=(OLD,DELETE,DELETE)
+//

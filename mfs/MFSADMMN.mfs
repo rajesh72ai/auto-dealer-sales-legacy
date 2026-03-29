@@ -1,0 +1,166 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: MAIN MENU / SIGN-ON                              *
+*  TRANSACTION: AUTOMENU                                         *
+*  DESCRIPTION: Main menu with sign-on and navigation options    *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+ADMMNI   MID
+         SEG
+         MFLD  'AUTOMENU',LTH=8
+         MFLD  USERID,LTH=8
+         MFLD  PASSWD,LTH=8
+         MFLD  MENUSEL,LTH=2
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+ADMMNO   MOD
+         SEG
+         MFLD  (USERID,LTH=8)
+         MFLD  (USRNAME,LTH=30)
+         MFLD  (DLRCODE,LTH=5)
+         MFLD  (DLRNAME,LTH=30)
+         MFLD  (MSGTEXT,LTH=79)
+         MFLD  (SYSDATE,LTH=10)
+         MFLD  (SYSTIME,LTH=8)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+ADMMNDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                         MAIN MENU / SIGN-ON',              X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-6: SIGN-ON FIELDS ---
+         DFLD  'USER ID:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  USERID,POS=(4,26),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  'PASSWORD:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  PASSWD,POS=(5,26),LTH=8,ATTR=(UNPROT,ALPHA,NODISP)
+         DFLD  'DEALER:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(6,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  DLRNAME,POS=(6,33),LTH=30,ATTR=(PROT,NORM)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  ' ',POS=(7,1),ATTR=(PROT,NORM)
+*
+* --- ROW 8: SELECTION PROMPT ---
+         DFLD  'SELECTION:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MENUSEL,POS=(8,16),LTH=2,ATTR=(UNPROT,NUM)
+*
+* --- ROW 9: SEPARATOR ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 10-19: MENU OPTIONS ---
+         DFLD  '1  = VEHICLE MANAGEMENT',POS=(10,10),ATTR=(PROT,BRT)
+         DFLD  '2  = STOCK CONTROL',POS=(11,10),ATTR=(PROT,BRT)
+         DFLD  '3  = CUSTOMER MANAGEMENT',POS=(12,10),ATTR=(PROT,BRT)
+         DFLD  '4  = SALES PROCESSING',POS=(13,10),ATTR=(PROT,BRT)
+         DFLD  '5  = FINANCE & INSURANCE',POS=(14,10),ATTR=(PROT,BRT)
+         DFLD  '6  = FLOOR PLAN MANAGEMENT',POS=(15,10),ATTR=(PROT,BRT)
+         DFLD  '7  = WARRANTY ADMINISTRATION',POS=(16,10),ATTR=(PROT,BRT)
+         DFLD  '8  = REGISTRATION & TITLE',POS=(17,10),ATTR=(PROT,BRT)
+         DFLD  '9  = REPORTS & INQUIRIES',POS=(18,10),ATTR=(PROT,BRT)
+         DFLD  '10 = SYSTEM ADMINISTRATION',POS=(19,10),ATTR=(PROT,BRT)
+*
+* --- ROW 20-21: SYSTEM INFO ---
+         DFLD  'DATE:',POS=(20,5),ATTR=(PROT,NORM)
+         DFLD  SYSDATE,POS=(20,11),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TIME:',POS=(20,25),ATTR=(PROT,NORM)
+         DFLD  SYSTIME,POS=(20,31),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'USER:',POS=(21,5),ATTR=(PROT,NORM)
+         DFLD  USRNAME,POS=(21,11),LTH=30,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=EXIT  PF12=LOGOFF',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+ADMMNDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                         MAIN MENU / SIGN-ON',              X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-6: SIGN-ON FIELDS ---
+         DFLD  'USER ID:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  USERID,POS=(4,26),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'PASSWORD:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  PASSWD,POS=(5,26),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'DEALER:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(6,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  DLRNAME,POS=(6,33),LTH=30,ATTR=(PROT,NORM)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  ' ',POS=(7,1),ATTR=(PROT,NORM)
+*
+* --- ROW 8: SELECTION PROMPT ---
+         DFLD  'SELECTION:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MENUSEL,POS=(8,16),LTH=2,ATTR=(PROT,NORM)
+*
+* --- ROW 9: SEPARATOR ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 10-19: MENU OPTIONS ---
+         DFLD  '1  = VEHICLE MANAGEMENT',POS=(10,10),ATTR=(PROT,BRT)
+         DFLD  '2  = STOCK CONTROL',POS=(11,10),ATTR=(PROT,BRT)
+         DFLD  '3  = CUSTOMER MANAGEMENT',POS=(12,10),ATTR=(PROT,BRT)
+         DFLD  '4  = SALES PROCESSING',POS=(13,10),ATTR=(PROT,BRT)
+         DFLD  '5  = FINANCE & INSURANCE',POS=(14,10),ATTR=(PROT,BRT)
+         DFLD  '6  = FLOOR PLAN MANAGEMENT',POS=(15,10),ATTR=(PROT,BRT)
+         DFLD  '7  = WARRANTY ADMINISTRATION',POS=(16,10),ATTR=(PROT,BRT)
+         DFLD  '8  = REGISTRATION & TITLE',POS=(17,10),ATTR=(PROT,BRT)
+         DFLD  '9  = REPORTS & INQUIRIES',POS=(18,10),ATTR=(PROT,BRT)
+         DFLD  '10 = SYSTEM ADMINISTRATION',POS=(19,10),ATTR=(PROT,BRT)
+*
+* --- ROW 20-21: SYSTEM INFO ---
+         DFLD  'DATE:',POS=(20,5),ATTR=(PROT,NORM)
+         DFLD  SYSDATE,POS=(20,11),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TIME:',POS=(20,25),ATTR=(PROT,NORM)
+         DFLD  SYSTIME,POS=(20,31),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'USER:',POS=(21,5),ATTR=(PROT,NORM)
+         DFLD  USRNAME,POS=(21,11),LTH=30,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=EXIT  PF12=LOGOFF',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

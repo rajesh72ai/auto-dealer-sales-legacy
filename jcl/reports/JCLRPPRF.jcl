@@ -1,0 +1,59 @@
+//*********************************************************************
+//* JCL:      JCLRPPRF
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  PROFITABILITY REPORT
+//*           RUNS RPTPRF00 - GROSS/NET PROFIT BY DEAL TYPE,
+//*           F&I CONTRIBUTION, FRONT-END VS BACK-END PROFIT,
+//*           DEALER AND SALESPERSON PROFITABILITY RANKINGS
+//* SCHEDULE: MONTHLY 2ND BUSINESS DAY 07:00 CST
+//* OVERRIDE: CHANGE PARM DATE FOR HISTORICAL RERUN
+//*********************************************************************
+//AUTOSLRD JOB (ACCT),'AUTOSALES-RPPRF',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//RPTOUT   OUTPUT JESDS=ALL,CLASS=A,
+//         DEST=LOCAL,COPIES=2,
+//         FORMS=STD132
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE PROFITABILITY REPORT (IMS BMP)
+//*-------------------------------------------------------------------
+//RPTPRF   EXEC IMSBATCH,MBR=RPTPRF00,
+//         PSB=PSBRPT01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD DSN=AUTOSALE.PROD.REPORT.PROFIT(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(15,5),RLSE),
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//SYSIN    DD *
+  REPORT-DATE=&LYYMMDD
+  PROFIT-MONTH=&LYYMMDD
+  INCLUDE-FI=Y
+  INCLUDE-RANKINGS=Y
+  INCLUDE-YTD=Y
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - PRINT REPORT (2 COPIES)
+//*-------------------------------------------------------------------
+//PRINT    EXEC PGM=IEBGENER,COND=(4,LT,RPTPRF)
+//SYSUT1   DD DSN=AUTOSALE.PROD.REPORT.PROFIT(&LYYMMDD),DISP=SHR
+//SYSUT2   DD SYSOUT=A,OUTPUT=*.RPTOUT,
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//

@@ -1,0 +1,171 @@
+//*********************************************************************
+//* JCL:      JCLCHECK
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  DB2 CHECK DATA FOR INTEGRITY
+//*           VALIDATES REFERENTIAL INTEGRITY CONSTRAINTS,
+//*           CHECK CONSTRAINTS, AND TABLESPACE CONSISTENCY
+//*           FOR ALL AUTOSALES TABLESPACES
+//* SCHEDULE: MONTHLY 2ND SUNDAY 02:00 CST
+//* ON ERROR: CONTACT DBA - CHECK PENDING STATUS BLOCKS DML
+//*********************************************************************
+//AUTOSLU9 JOB (ACCT),'AUTOSALES-CHECK',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID,
+//          REGION=0M,TIME=60
+//*
+//JOBLIB   DD DSN=DSNLOAD,DISP=SHR
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - CHECK DATA ON VEHICLE TABLESPACE
+//*-------------------------------------------------------------------
+//CHKVEH   EXEC PGM=IKJEFT01,DYNAMNBR=20
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSERR   DD DSN=AUTOSALE.WORK.CHECK.ERRVEH,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//SYSIN    DD *
+  CHECK DATA TABLESPACE AUTODB.TSVEHICL
+    SCOPE ALL
+    ERRDDN SYSERR
+    LOG YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - CHECK DATA ON SALES DEAL TABLESPACE
+//*-------------------------------------------------------------------
+//CHKDEAL  EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,CHKVEH)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSERR   DD DSN=AUTOSALE.WORK.CHECK.ERRDEAL,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//SYSIN    DD *
+  CHECK DATA TABLESPACE AUTODB.TSSLDEAL
+    SCOPE ALL
+    ERRDDN SYSERR
+    LOG YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP030 - CHECK DATA ON CUSTOMER TABLESPACE
+//*-------------------------------------------------------------------
+//CHKCUST  EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,CHKDEAL)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSERR   DD DSN=AUTOSALE.WORK.CHECK.ERRCUST,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//SYSIN    DD *
+  CHECK DATA TABLESPACE AUTODB.TSCUSTMR
+    SCOPE ALL
+    ERRDDN SYSERR
+    LOG YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP040 - CHECK DATA ON FINANCE TABLESPACE
+//*-------------------------------------------------------------------
+//CHKFIN   EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,CHKCUST)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSERR   DD DSN=AUTOSALE.WORK.CHECK.ERRFIN,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//SYSIN    DD *
+  CHECK DATA TABLESPACE AUTODB.TSFINAPP
+    SCOPE ALL
+    ERRDDN SYSERR
+    LOG YES;
+  CHECK DATA TABLESPACE AUTODB.TSFLRPLN
+    SCOPE ALL
+    ERRDDN SYSERR
+    LOG YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP050 - CHECK DATA ON REMAINING TABLESPACES
+//*-------------------------------------------------------------------
+//CHKOTH   EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,CHKFIN)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSERR   DD DSN=AUTOSALE.WORK.CHECK.ERROTH,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//SYSIN    DD *
+  CHECK DATA TABLESPACE AUTODB.TSWARRTY
+    SCOPE ALL ERRDDN SYSERR LOG YES;
+  CHECK DATA TABLESPACE AUTODB.TSREGIST
+    SCOPE ALL ERRDDN SYSERR LOG YES;
+  CHECK DATA TABLESPACE AUTODB.TSCOMMIS
+    SCOPE ALL ERRDDN SYSERR LOG YES;
+  CHECK DATA TABLESPACE AUTODB.TSRECALL
+    SCOPE ALL ERRDDN SYSERR LOG YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP060 - REPORT CHECK RESULTS
+//*-------------------------------------------------------------------
+//REPORT   EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,CHKOTH)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  SELECT DBNAME, NAME, STATUS, CHKPEND
+  FROM SYSIBM.SYSTABLESPACE
+  WHERE DBNAME = 'AUTODB'
+  ORDER BY NAME;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP070 - CLEANUP ERROR DATASETS
+//*-------------------------------------------------------------------
+//CLEANUP  EXEC PGM=IEFBR14,COND=(0,NE)
+//DEL1     DD DSN=AUTOSALE.WORK.CHECK.ERRVEH,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL2     DD DSN=AUTOSALE.WORK.CHECK.ERRDEAL,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL3     DD DSN=AUTOSALE.WORK.CHECK.ERRCUST,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL4     DD DSN=AUTOSALE.WORK.CHECK.ERRFIN,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL5     DD DSN=AUTOSALE.WORK.CHECK.ERROTH,
+//         DISP=(OLD,DELETE,DELETE)
+//

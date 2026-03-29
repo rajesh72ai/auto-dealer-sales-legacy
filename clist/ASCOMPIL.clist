@@ -1,0 +1,237 @@
+PROC 0 MEMBER() ENV(DEV)
+/*********************************************************************/
+/* ASCOMPIL - AUTOSALES Compile & Link CLIST                         */
+/*                                                                   */
+/* Description: Compiles a COBOL program with DB2 precompiler.       */
+/*              Steps: DB2 PRECOMPILE -> COBOL COMPILE -> LINK-EDIT  */
+/*              Prompts for member name, substitutes into compile     */
+/*              JCL, submits, and displays compilation results.       */
+/*                                                                   */
+/* Usage:       TSO %ASCOMPIL                                        */
+/*              TSO %ASCOMPIL MEMBER(BATDLY00)                      */
+/*              TSO %ASCOMPIL MEMBER(BATDLY00) ENV(QA)              */
+/*                                                                   */
+/* Author:      AUTOSALES Development Team                           */
+/* System:      AUTOSALES - IMS DC/COBOL/DB2 z/OS                   */
+/*********************************************************************/
+CONTROL NOFLUSH NOMSG
+ERROR DO
+  SET &ERRRC = &LASTCC
+  WRITE *** ASCOMPIL error. RC=&ERRRC
+  RETURN
+END
+
+/*---------------------------------------------------------------*/
+/* Environment-specific HLQs                                     */
+/*---------------------------------------------------------------*/
+SELECT (&ENV)
+  WHEN (DEV)  SET &HLQ = &STR(AUTODEV)
+  WHEN (QA)   SET &HLQ = &STR(AUTOQA)
+  WHEN (PROD) SET &HLQ = &STR(AUTOSALE)
+  OTHERWISE DO
+    WRITE *** Invalid environment: &ENV
+    WRITE *** Valid values: DEV, QA, PROD
+    EXIT CODE(8)
+  END
+END
+
+/*---------------------------------------------------------------*/
+/* Dataset definitions                                           */
+/*---------------------------------------------------------------*/
+SET &SRCLIB  = &STR(&HLQ..COBOL)
+SET &CPYLIB  = &STR(&HLQ..COPYLIB)
+SET &DBRMLIB = &STR(&HLQ..DBRM)
+SET &LOADLIB = &STR(&HLQ..LOADLIB)
+SET &LISTLIB = &STR(&HLQ..LISTING)
+SET &JCLLIB  = &STR(&HLQ..JCL.SETUP)
+
+/* DB2 and compiler datasets */
+SET &DB2LOAD = &STR(DSN.V12R1.SDSNLOAD)
+SET &DB2RUN  = &STR(DSN.V12R1.RUNLIB.LOAD)
+SET &COBCOMP = &STR(IGY.V6R4M0.SIGYCOMP)
+SET &LELKED  = &STR(CEE.SCEELKED)
+
+/*---------------------------------------------------------------*/
+/* Prompt for member if not provided                             */
+/*---------------------------------------------------------------*/
+IF &MEMBER = THEN DO
+  WRITE
+  WRITE ============================================================
+  WRITE    AUTOSALES - Compile & Link
+  WRITE    Environment: &ENV (&HLQ)
+  WRITE ============================================================
+  WRITE
+  WRITENR  Enter COBOL member name to compile:
+  READ &MEMBER
+  IF &MEMBER = THEN DO
+    WRITE  No member specified. Exiting.
+    EXIT CODE(0)
+  END
+END
+
+/*---------------------------------------------------------------*/
+/* Verify member exists in source library                        */
+/*---------------------------------------------------------------*/
+WRITE
+WRITE  Verifying member &MEMBER in &SRCLIB ...
+LISTDS '&SRCLIB' MEMBERS
+IF &LASTCC > 0 THEN DO
+  WRITE *** Source library not found: &SRCLIB
+  EXIT CODE(8)
+END
+
+/*---------------------------------------------------------------*/
+/* Determine if this is an IMS or batch program                  */
+/*---------------------------------------------------------------*/
+SET &PGMTYPE = &STR(BATCH)
+SET &PREFIX2 = &SUBSTR(1:3,&MEMBER)
+/* Online programs use IMS DLI interface */
+IF &PREFIX2 = VEH | &PREFIX2 = STK | &PREFIX2 = SAL | +
+   &PREFIX2 = CUS | &PREFIX2 = FIN | &PREFIX2 = FPL | +
+   &PREFIX2 = ADM | &PREFIX2 = PLI | &PREFIX2 = WRC | +
+   &PREFIX2 = REG THEN +
+  SET &PGMTYPE = &STR(IMS)
+
+WRITE  Program type: &PGMTYPE
+WRITE
+
+/*---------------------------------------------------------------*/
+/* Build compile JCL from skeleton                               */
+/*---------------------------------------------------------------*/
+WRITE  Building compile JCL for &MEMBER ...
+
+/* Allocate temp dataset for generated JCL */
+SET &TEMPJCL = &STR(&HLQ..COMPILE.TEMP)
+ALLOC DA('&TEMPJCL') NEW REUSE UNIT(SYSDA) +
+  SPACE(5,5) TRACKS RECFM(F B) LRECL(80) BLKSIZE(6160)
+
+OPENFILE COMPJCL DA('&TEMPJCL') OUTPUT
+
+/* JOB card */
+SET &COMPJCL = &STR(//&MEMBER.C JOB (AUTOSALE),'COMPILE &MEMBER',)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       CLASS=A,MSGCLASS=X,NOTIFY=&SYSUID)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//*                                          )
+PUTFILE COMPJCL
+
+/* Step 1: DB2 Precompile */
+SET &COMPJCL = &STR(//PRECOMP EXEC PGM=DSNHPC,REGION=0M,)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       PARM='HOST(COB2),APOST,APOSTSQL,SOURCE')
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//STEPLIB  DD DSN=&DB2LOAD,DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//DBRMLIB  DD DSN=&DBRMLIB(&MEMBER),DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSCIN   DD DSN=&&DSNHOUT,DISP=(,PASS),)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSIN    DD DSN=&SRCLIB(&MEMBER),DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSLIB   DD DSN=&CPYLIB,DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSPRINT DD DSN=&LISTLIB(&MEMBER.P),DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT1   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT2   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//*                                          )
+PUTFILE COMPJCL
+
+/* Step 2: COBOL Compile */
+SET &COMPJCL = &STR(//COMPILE EXEC PGM=IGYCRCTL,REGION=0M,)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       PARM='LIB,RENT,APOST,MAP,XREF,OFFSET',)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       COND=(4,LT,PRECOMP))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//STEPLIB  DD DSN=&COBCOMP,DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSIN    DD DSN=&&DSNHOUT,DISP=(OLD,DELETE))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSLIB   DD DSN=&CPYLIB,DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSLIN   DD DSN=&&LOADSET,DISP=(,PASS),)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSPRINT DD DSN=&LISTLIB(&MEMBER.C),DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT1   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT2   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT3   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT4   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT5   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT6   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT7   DD UNIT=SYSDA,SPACE=(800,(500,500)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//*                                          )
+PUTFILE COMPJCL
+
+/* Step 3: Link-Edit */
+SET &COMPJCL = &STR(//LKED   EXEC PGM=IEWL,REGION=0M,)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       PARM='RENT,LIST,XREF,LET',)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//       COND=(4,LT))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSLIB   DD DSN=&LELKED,DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//         DD DSN=&DB2LOAD,DISP=SHR)
+PUTFILE COMPJCL
+IF &PGMTYPE = IMS THEN DO
+  SET &COMPJCL = &STR(//         DD DSN=IMS.V15R1.SDFSRESL,DISP=SHR)
+  PUTFILE COMPJCL
+END
+SET &COMPJCL = &STR(//SYSLMOD  DD DSN=&LOADLIB(&MEMBER),DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSLIN   DD DSN=&&LOADSET,DISP=(OLD,DELETE))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSPRINT DD DSN=&LISTLIB(&MEMBER.L),DISP=SHR)
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//SYSUT1   DD UNIT=SYSDA,SPACE=(1024,(50,20)))
+PUTFILE COMPJCL
+SET &COMPJCL = &STR(//)
+PUTFILE COMPJCL
+
+CLOSFILE COMPJCL
+
+/*---------------------------------------------------------------*/
+/* Submit the compile JCL                                        */
+/*---------------------------------------------------------------*/
+WRITE
+WRITE  Submitting compile job for &MEMBER ...
+SUBMIT '&TEMPJCL'
+SET &SUBRC = &LASTCC
+IF &SUBRC = 0 THEN DO
+  WRITE
+  WRITE ============================================================
+  WRITE  Compile job submitted successfully for &MEMBER
+  WRITE  Steps: DB2 Precompile -> COBOL Compile -> Link-Edit
+  WRITE  Environment: &ENV (&HLQ)
+  WRITE
+  WRITE  Use ASSTATUS to monitor compile job.
+  WRITE  Listings in: &LISTLIB
+  WRITE ============================================================
+END
+ELSE DO
+  WRITE *** Submit failed. RC=&SUBRC
+  WRITE *** Check JCL in &TEMPJCL
+END
+
+/*---------------------------------------------------------------*/
+/* Cleanup temp dataset                                          */
+/*---------------------------------------------------------------*/
+IF &SUBRC = 0 THEN +
+  FREE DA('&TEMPJCL')
+
+EXIT CODE(&SUBRC)

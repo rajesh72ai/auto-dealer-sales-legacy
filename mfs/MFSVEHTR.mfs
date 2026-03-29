@@ -1,0 +1,220 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: DEALER TRADE/TRANSFER                             *
+*  TRANSACTION: AUTOVTR                                          *
+*  DESCRIPTION: Request, approve, or reject dealer trades        *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+VEHTRI   MID
+         SEG
+         MFLD  'AUTOVTR ',LTH=8
+         MFLD  VIN,LTH=17
+         MFLD  FRDLR,LTH=5
+         MFLD  TODLR,LTH=5
+         MFLD  REASON,LTH=40
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+VEHTRO   MOD
+         SEG
+         MFLD  (VIN,LTH=17)
+         MFLD  (MDLYEAR,LTH=4)
+         MFLD  (MAKNAME,LTH=20)
+         MFLD  (MDLNAME,LTH=25)
+         MFLD  (EXTCOLR,LTH=15)
+         MFLD  (TRIMLEVL,LTH=15)
+         MFLD  (STKNUM,LTH=8)
+         MFLD  (STATUS,LTH=10)
+         MFLD  (MSRP,LTH=10)
+         MFLD  (FRDLR,LTH=5)
+         MFLD  (FRDLNAM,LTH=30)
+         MFLD  (TODLR,LTH=5)
+         MFLD  (TODLNAM,LTH=30)
+         MFLD  (TRSTAT,LTH=10)
+         MFLD  (TRDATE,LTH=10)
+         MFLD  (REASON,LTH=40)
+         MFLD  (APPRVBY,LTH=8)
+         MFLD  (APPRVDT,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+VEHTRDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                       DEALER TRADE/TRANSFER',               X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: VIN INPUT ---
+         DFLD  'VIN:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  VIN,POS=(4,26),LTH=17,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 5: SEPARATOR ---
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 6-10: VEHICLE DETAILS (DISPLAY ONLY) ---
+         DFLD  '--- VEHICLE DETAILS ---',POS=(6,5),ATTR=(PROT,BRT)
+*
+         DFLD  'YEAR:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(7,26),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(7,35),ATTR=(PROT,BRT)
+         DFLD  MAKNAME,POS=(7,41),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLNAME,POS=(8,26),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'TRIM:',POS=(8,55),ATTR=(PROT,BRT)
+         DFLD  TRIMLEVL,POS=(8,61),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'COLOR:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  EXTCOLR,POS=(9,26),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'STOCK#:',POS=(9,45),ATTR=(PROT,BRT)
+         DFLD  STKNUM,POS=(9,53),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'MSRP:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  MSRP,POS=(10,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(10,42),ATTR=(PROT,BRT)
+         DFLD  STATUS,POS=(10,50),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 11: SEPARATOR ---
+         DFLD  ' ',POS=(11,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 12-17: TRANSFER DETAILS ---
+         DFLD  '--- TRANSFER DETAILS ---',POS=(12,5),ATTR=(PROT,BRT)
+*
+         DFLD  'FROM DEALER:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  FRDLR,POS=(13,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  FRDLNAM,POS=(13,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'TO DEALER:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  TODLR,POS=(14,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  TODLNAM,POS=(14,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'TRANSFER STATUS:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  TRSTAT,POS=(15,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DATE:',POS=(15,42),ATTR=(PROT,BRT)
+         DFLD  TRDATE,POS=(15,48),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'REASON:',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  REASON,POS=(16,26),LTH=40,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 17-18: APPROVAL INFO ---
+         DFLD  ' ',POS=(17,1),ATTR=(PROT,NORM)
+         DFLD  '--- APPROVAL ---',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  'APPROVED BY:',POS=(19,5),ATTR=(PROT,NORM)
+         DFLD  APPRVBY,POS=(19,26),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'APPROVAL DATE:',POS=(19,40),ATTR=(PROT,NORM)
+         DFLD  APPRVDT,POS=(19,55),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=REQUEST  PF6=APPROVE  PF9=REJECT',          X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+VEHTRDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                       DEALER TRADE/TRANSFER',               X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: VIN ---
+         DFLD  'VIN:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  VIN,POS=(4,26),LTH=17,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 6-10: VEHICLE DETAILS ---
+         DFLD  '--- VEHICLE DETAILS ---',POS=(6,5),ATTR=(PROT,BRT)
+*
+         DFLD  'YEAR:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(7,26),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(7,35),ATTR=(PROT,BRT)
+         DFLD  MAKNAME,POS=(7,41),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLNAME,POS=(8,26),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'TRIM:',POS=(8,55),ATTR=(PROT,BRT)
+         DFLD  TRIMLEVL,POS=(8,61),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'COLOR:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  EXTCOLR,POS=(9,26),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'STOCK#:',POS=(9,45),ATTR=(PROT,BRT)
+         DFLD  STKNUM,POS=(9,53),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'MSRP:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  MSRP,POS=(10,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(10,42),ATTR=(PROT,BRT)
+         DFLD  STATUS,POS=(10,50),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(11,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 12-16: TRANSFER DETAILS ---
+         DFLD  '--- TRANSFER DETAILS ---',POS=(12,5),ATTR=(PROT,BRT)
+*
+         DFLD  'FROM DEALER:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  FRDLR,POS=(13,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  FRDLNAM,POS=(13,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'TO DEALER:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  TODLR,POS=(14,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  TODLNAM,POS=(14,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'TRANSFER STATUS:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  TRSTAT,POS=(15,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DATE:',POS=(15,42),ATTR=(PROT,BRT)
+         DFLD  TRDATE,POS=(15,48),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'REASON:',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  REASON,POS=(16,26),LTH=40,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(17,1),ATTR=(PROT,NORM)
+         DFLD  '--- APPROVAL ---',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  'APPROVED BY:',POS=(19,5),ATTR=(PROT,NORM)
+         DFLD  APPRVBY,POS=(19,26),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'APPROVAL DATE:',POS=(19,40),ATTR=(PROT,NORM)
+         DFLD  APPRVDT,POS=(19,55),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=REQUEST  PF6=APPROVE  PF9=REJECT',          X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

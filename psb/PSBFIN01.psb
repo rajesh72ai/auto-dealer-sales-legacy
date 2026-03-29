@@ -1,0 +1,26 @@
+*================================================================*
+*  PSBFIN01 - FINANCE PROGRAMS PSB                               *
+*  AUTOSALES - Automotive Dealer Sales & Reporting System        *
+*  Access: I/O PCB, DBDAUTO4 full, DBDAUTO2 read                *
+*================================================================*
+*
+*------- I/O PCB FOR TERMINAL PROCESSING -------------------------*
+         PCB   TYPE=TP,MODIFY=YES
+*
+*------- DBDAUTO4 - FINANCE & FLOOR PLAN (FULL ACCESS) ----------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO4,PROCOPT=A,KEYLEN=12
+         SENSEG NAME=FINAPP,PARENT=0,PROCOPT=A
+         SENSEG NAME=FINPROD,PARENT=FINAPP,PROCOPT=A
+         SENSEG NAME=LEASTERM,PARENT=FINAPP,PROCOPT=A
+         SENSEG NAME=FLOORVEH,PARENT=FINAPP,PROCOPT=A
+*
+*------- DBDAUTO2 - CUSTOMER & SALES (READ ONLY) ----------------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO2,PROCOPT=G,KEYLEN=10
+         SENSEG NAME=CUSTOMER,PARENT=0,PROCOPT=G
+         SENSEG NAME=CUSTLEAD,PARENT=CUSTOMER,PROCOPT=G
+         SENSEG NAME=SALESDEAL,PARENT=CUSTOMER,PROCOPT=G
+         SENSEG NAME=DEALLINE,PARENT=SALESDEAL,PROCOPT=G
+         SENSEG NAME=TRADEIN,PARENT=SALESDEAL,PROCOPT=G
+*
+         PSBGEN LANG=COBOL,PSBNAME=PSBFIN01
+         END

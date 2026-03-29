@@ -1,0 +1,229 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: STOCK INQUIRY                                     *
+*  TRANSACTION: AUTOSIQ                                          *
+*  DESCRIPTION: Inquiry on stock levels by dealer/model          *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+STKINI   MID
+         SEG
+         MFLD  'AUTOSIQ ',LTH=8
+         MFLD  DLRCODE,LTH=5
+         MFLD  MDLYEAR,LTH=4
+         MFLD  MAKCODE,LTH=5
+         MFLD  MDLCODE,LTH=5
+         MFLD  STATUS,LTH=1
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+STKINO   MOD
+         SEG
+         MFLD  (DLRCODE,LTH=5)
+         MFLD  (DLRNAME,LTH=30)
+         MFLD  (MDLYEAR,LTH=4)
+         MFLD  (MAKCODE,LTH=5)
+         MFLD  (MAKNAME,LTH=20)
+         MFLD  (MDLCODE,LTH=5)
+         MFLD  (MDLNAME,LTH=25)
+         MFLD  (STATUS,LTH=1)
+         MFLD  (ONHAND,LTH=5)
+         MFLD  (INTRNS,LTH=5)
+         MFLD  (ALLOCD,LTH=5)
+         MFLD  (ONHOLD,LTH=5)
+         MFLD  (AVAIL,LTH=5)
+         MFLD  (SOLDMTD,LTH=5)
+         MFLD  (SOLDYTD,LTH=6)
+         MFLD  (REORDPT,LTH=5)
+         MFLD  (TOTVAL,LTH=12)
+         MFLD  (AVGDAYS,LTH=4)
+         MFLD  (TURNRT,LTH=5)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+STKINDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                          STOCK INQUIRY',                    X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROWS 4-7: SEARCH CRITERIA ---
+         DFLD  '--- SEARCH CRITERIA ---',POS=(4,5),ATTR=(PROT,BRT)
+*
+         DFLD  'DEALER CODE:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(5,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  DLRNAME,POS=(5,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL YEAR:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(6,26),LTH=4,ATTR=(UNPROT,NUM)
+*
+         DFLD  'MAKE CODE:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MAKCODE,POS=(7,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  MAKNAME,POS=(7,33),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL CODE:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLCODE,POS=(8,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  MDLNAME,POS=(8,33),LTH=25,ATTR=(PROT,NORM)
+*
+         DFLD  'STATUS:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  STATUS,POS=(9,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  '(A=AVAIL, H=HOLD, S=SOLD, BLANK=ALL)',                      X
+               POS=(9,29),ATTR=(PROT,NORM)
+*
+* --- ROW 10: SEPARATOR ---
+         DFLD  ' ',POS=(10,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 11-19: STOCK LEVELS ---
+         DFLD  '--- STOCK LEVELS ---',POS=(11,5),ATTR=(PROT,BRT)
+*
+         DFLD  'ON HAND:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  ONHAND,POS=(12,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'IN TRANSIT:',POS=(12,38),ATTR=(PROT,BRT)
+         DFLD  INTRNS,POS=(12,50),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  'ALLOCATED:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  ALLOCD,POS=(13,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'ON HOLD:',POS=(13,38),ATTR=(PROT,BRT)
+         DFLD  ONHOLD,POS=(13,50),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  'AVAILABLE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  AVAIL,POS=(14,26),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(15,1),ATTR=(PROT,NORM)
+*
+         DFLD  '--- SALES ---',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  'SOLD MTD:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  SOLDMTD,POS=(17,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'SOLD YTD:',POS=(17,38),ATTR=(PROT,BRT)
+         DFLD  SOLDYTD,POS=(17,48),LTH=6,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(18,1),ATTR=(PROT,NORM)
+*
+         DFLD  '--- METRICS ---',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  'REORDER POINT:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  REORDPT,POS=(20,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'AVG DAYS:',POS=(20,38),ATTR=(PROT,BRT)
+         DFLD  AVGDAYS,POS=(20,48),LTH=4,ATTR=(PROT,NORM)
+*
+         DFLD  'TOTAL VALUE:',POS=(21,5),ATTR=(PROT,BRT)
+         DFLD  TOTVAL,POS=(21,26),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'TURN RATE:',POS=(21,42),ATTR=(PROT,BRT)
+         DFLD  TURNRT,POS=(21,53),LTH=5,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF7=PREV  PF8=NEXT',                            X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+STKINDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                          STOCK INQUIRY',                    X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROWS 4-9: SEARCH CRITERIA ---
+         DFLD  '--- SEARCH CRITERIA ---',POS=(4,5),ATTR=(PROT,BRT)
+*
+         DFLD  'DEALER CODE:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(5,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  DLRNAME,POS=(5,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL YEAR:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(6,26),LTH=4,ATTR=(PROT,NORM)
+*
+         DFLD  'MAKE CODE:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MAKCODE,POS=(7,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  MAKNAME,POS=(7,33),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL CODE:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLCODE,POS=(8,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  MDLNAME,POS=(8,33),LTH=25,ATTR=(PROT,NORM)
+*
+         DFLD  'STATUS:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  STATUS,POS=(9,26),LTH=1,ATTR=(PROT,NORM)
+*
+* --- ROW 10: SEPARATOR ---
+         DFLD  ' ',POS=(10,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 11-21: STOCK LEVELS ---
+         DFLD  '--- STOCK LEVELS ---',POS=(11,5),ATTR=(PROT,BRT)
+*
+         DFLD  'ON HAND:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  ONHAND,POS=(12,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'IN TRANSIT:',POS=(12,38),ATTR=(PROT,BRT)
+         DFLD  INTRNS,POS=(12,50),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  'ALLOCATED:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  ALLOCD,POS=(13,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'ON HOLD:',POS=(13,38),ATTR=(PROT,BRT)
+         DFLD  ONHOLD,POS=(13,50),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  'AVAILABLE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  AVAIL,POS=(14,26),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(15,1),ATTR=(PROT,NORM)
+*
+         DFLD  '--- SALES ---',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  'SOLD MTD:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  SOLDMTD,POS=(17,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'SOLD YTD:',POS=(17,38),ATTR=(PROT,BRT)
+         DFLD  SOLDYTD,POS=(17,48),LTH=6,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(18,1),ATTR=(PROT,NORM)
+*
+         DFLD  '--- METRICS ---',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  'REORDER POINT:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  REORDPT,POS=(20,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  'AVG DAYS:',POS=(20,38),ATTR=(PROT,BRT)
+         DFLD  AVGDAYS,POS=(20,48),LTH=4,ATTR=(PROT,NORM)
+*
+         DFLD  'TOTAL VALUE:',POS=(21,5),ATTR=(PROT,BRT)
+         DFLD  TOTVAL,POS=(21,26),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'TURN RATE:',POS=(21,42),ATTR=(PROT,BRT)
+         DFLD  TURNRT,POS=(21,53),LTH=5,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF7=PREV  PF8=NEXT',                            X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

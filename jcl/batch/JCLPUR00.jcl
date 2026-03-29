@@ -1,0 +1,105 @@
+//*********************************************************************
+//* JCL:      JCLPUR00
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  QUARTERLY PURGE PROCESSING
+//*           1. IDCAMS SPACE CHECK ON TABLESPACES BEFORE PURGE
+//*           2. EXECUTE BATPUR00 - PURGE AGED AUDIT LOGS,
+//*              EXPIRED INCENTIVES, OLD STATUS HISTORY
+//*           3. POST-PURGE REORG ON PURGED TABLESPACES
+//* SCHEDULE: 1ST SATURDAY AFTER QUARTER END
+//* ON ERROR: CONTACT ON-CALL DBA
+//*********************************************************************
+//AUTOSLP0 JOB (ACCT),'AUTOSALES-PURGE',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - IDCAMS SPACE CHECK ON KEY DATASETS
+//*-------------------------------------------------------------------
+//SPACECHK EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  LISTCAT ENTRIES(AUTOSALE.PROD.LOADLIB) ALL
+  LISTCAT ENTRIES(DSNDB07.DSNDBC.AUTODB.*) ALL
+  IF LASTCC = 0 THEN -
+    SET MAXCC = 0
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - PRE-PURGE RECORD COUNTS FOR AUDIT
+//*-------------------------------------------------------------------
+//PRECOUNT EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,SPACECHK)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  SELECT 'AUDIT_LOG' AS TABLE_NAME,
+         COUNT(*) AS ROW_COUNT
+  FROM AUTOSALE.AUDIT_LOG
+  UNION ALL
+  SELECT 'VEHICLE_STATUS_HIST',
+         COUNT(*)
+  FROM AUTOSALE.VEHICLE_STATUS_HIST
+  UNION ALL
+  SELECT 'INCENTIVE_PROGRAM',
+         COUNT(*)
+  FROM AUTOSALE.INCENTIVE_PROGRAM
+  WHERE ACTIVE_FLAG = 'N';
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP030 - EXECUTE QUARTERLY PURGE (IMS BMP)
+//*-------------------------------------------------------------------
+//PURGE    EXEC IMSBATCH,MBR=BATPUR00,
+//         PSB=PSBBAT04,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//PURGEOUT DD DSN=AUTOSALE.PROD.ARCHIVE.PURGE(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(100,20),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//CTLCARD  DD *
+  PURGE-DATE=&LYYMMDD
+  CHECKPOINT-FREQ=1000
+  AUDIT-RETAIN-DAYS=365
+  STATUS-RETAIN-DAYS=180
+  INCENTIVE-PURGE=Y
+  ARCHIVE=Y
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP040 - POST-PURGE REORG ON AUDIT_LOG TABLESPACE
+//*-------------------------------------------------------------------
+//REORG    EXEC PGM=IKJEFT01,
+//         COND=(4,LT,PURGE)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  REORG TABLESPACE AUTODB.TSAUDITL
+    SHRLEVEL CHANGE
+    LOG YES
+    SORTDATA YES
+    STATISTICS TABLE(ALL) INDEX(ALL) UPDATE ALL;
+/*
+//

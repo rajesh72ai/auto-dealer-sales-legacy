@@ -1,0 +1,192 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: USER SECURITY MAINTENANCE                         *
+*  TRANSACTION: AUTOUSR                                          *
+*  DESCRIPTION: Add/update/delete user security records          *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+ADMUСИ   MID
+         SEG
+         MFLD  'AUTOUSR ',LTH=8
+         MFLD  ACTEFLAG,LTH=1
+         MFLD  USERID,LTH=8
+         MFLD  USRNAME,LTH=30
+         MFLD  PASSWD,LTH=8
+         MFLD  USRTYPE,LTH=1
+         MFLD  DLRCODE,LTH=5
+         MFLD  ACTFLAG,LTH=1
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+ADMUСO   MOD
+         SEG
+         MFLD  (ACTEFLAG,LTH=1)
+         MFLD  (USERID,LTH=8)
+         MFLD  (USRNAME,LTH=30)
+         MFLD  (PASSWD,LTH=8)
+         MFLD  (USRTYPE,LTH=1)
+         MFLD  (USRTDSC,LTH=15)
+         MFLD  (DLRCODE,LTH=5)
+         MFLD  (DLRNAME,LTH=30)
+         MFLD  (ACTFLAG,LTH=1)
+         MFLD  (LSTLOGN,LTH=10)
+         MFLD  (LSTTRAN,LTH=10)
+         MFLD  (CRTDATE,LTH=10)
+         MFLD  (UPDDATE,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+ADMUDIF  DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                     USER SECURITY MAINTENANCE',             X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  '(A=ADD, U=UPDATE, D=DELETE, I=INQUIRE)',                     X
+               POS=(4,29),ATTR=(PROT,NORM)
+*
+* --- ROW 5: BLANK ---
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 6-13: USER FIELDS ---
+         DFLD  'USER ID:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  USERID,POS=(6,26),LTH=8,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'USER NAME:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  USRNAME,POS=(7,26),LTH=30,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'PASSWORD:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  PASSWD,POS=(8,26),LTH=8,ATTR=(UNPROT,ALPHA,NODISP)
+*
+         DFLD  'USER TYPE:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  USRTYPE,POS=(9,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  USRTDSC,POS=(9,29),LTH=15,ATTR=(PROT,NORM)
+         DFLD  '(A=ADMIN, M=MGR, S=SALES, F=FIN)',                          X
+               POS=(9,46),ATTR=(PROT,NORM)
+*
+         DFLD  'DEALER CODE:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(10,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  DLRNAME,POS=(10,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'ACTIVE FLAG:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  ACTFLAG,POS=(11,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  '(Y=YES, N=NO)',POS=(11,29),ATTR=(PROT,NORM)
+*
+* --- ROW 13: SEPARATOR ---
+         DFLD  ' ',POS=(13,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 14-17: AUDIT FIELDS (DISPLAY ONLY) ---
+         DFLD  '--- AUDIT INFORMATION ---',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  'LAST LOGIN:',POS=(15,5),ATTR=(PROT,NORM)
+         DFLD  LSTLOGN,POS=(15,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'LAST TRANSACTION:',POS=(16,5),ATTR=(PROT,NORM)
+         DFLD  LSTTRAN,POS=(16,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'CREATED:',POS=(17,5),ATTR=(PROT,NORM)
+         DFLD  CRTDATE,POS=(17,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'UPDATED:',POS=(18,5),ATTR=(PROT,NORM)
+         DFLD  UPDDATE,POS=(18,26),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE  PF7=PREV  PF8=NEXT  PF9=DX
+               ELETE',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+ADMUDOF  DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                     USER SECURITY MAINTENANCE',             X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,26),LTH=1,ATTR=(PROT,NORM)
+         DFLD  '(A=ADD, U=UPDATE, D=DELETE, I=INQUIRE)',                     X
+               POS=(4,29),ATTR=(PROT,NORM)
+*
+* --- ROW 5: BLANK ---
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 6-11: USER FIELDS ---
+         DFLD  'USER ID:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  USERID,POS=(6,26),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'USER NAME:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  USRNAME,POS=(7,26),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'PASSWORD:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  PASSWD,POS=(8,26),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'USER TYPE:',POS=(9,5),ATTR=(PROT,BRT)
+         DFLD  USRTYPE,POS=(9,26),LTH=1,ATTR=(PROT,NORM)
+         DFLD  USRTDSC,POS=(9,29),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'DEALER CODE:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  DLRCODE,POS=(10,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  DLRNAME,POS=(10,33),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'ACTIVE FLAG:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  ACTFLAG,POS=(11,26),LTH=1,ATTR=(PROT,NORM)
+*
+* --- ROW 13: SEPARATOR ---
+         DFLD  ' ',POS=(13,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 14-18: AUDIT FIELDS ---
+         DFLD  '--- AUDIT INFORMATION ---',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  'LAST LOGIN:',POS=(15,5),ATTR=(PROT,NORM)
+         DFLD  LSTLOGN,POS=(15,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'LAST TRANSACTION:',POS=(16,5),ATTR=(PROT,NORM)
+         DFLD  LSTTRAN,POS=(16,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'CREATED:',POS=(17,5),ATTR=(PROT,NORM)
+         DFLD  CRTDATE,POS=(17,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'UPDATED:',POS=(18,5),ATTR=(PROT,NORM)
+         DFLD  UPDDATE,POS=(18,26),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE  PF7=PREV  PF8=NEXT  PF9=DX
+               ELETE',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

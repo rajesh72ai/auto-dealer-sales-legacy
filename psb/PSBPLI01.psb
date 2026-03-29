@@ -1,0 +1,25 @@
+*================================================================*
+*  PSBPLI01 - PRODUCTION/LOGISTICS PROGRAMS PSB                  *
+*  AUTOSALES - Automotive Dealer Sales & Reporting System        *
+*  Access: I/O PCB, DBDAUTO3 full, DBDAUTO1 update              *
+*================================================================*
+*
+*------- I/O PCB FOR TERMINAL PROCESSING -------------------------*
+         PCB   TYPE=TP,MODIFY=YES
+*
+*------- DBDAUTO3 - PRODUCTION & LOGISTICS (FULL ACCESS) --------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO3,PROCOPT=A,KEYLEN=12
+         SENSEG NAME=PRODORDR,PARENT=0,PROCOPT=A
+         SENSEG NAME=SHIPMENT,PARENT=PRODORDR,PROCOPT=A
+         SENSEG NAME=SHIPMVEH,PARENT=SHIPMENT,PROCOPT=A
+         SENSEG NAME=TRANSIT,PARENT=PRODORDR,PROCOPT=A
+*
+*------- DBDAUTO1 - VEHICLE & INVENTORY (UPDATE) ----------------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO1,PROCOPT=GR,KEYLEN=17
+         SENSEG NAME=VEHICLE,PARENT=0,PROCOPT=GR
+         SENSEG NAME=VEHOPT,PARENT=VEHICLE,PROCOPT=GR
+         SENSEG NAME=VEHSTAT,PARENT=VEHICLE,PROCOPT=GI
+         SENSEG NAME=LOTLOC,PARENT=VEHICLE,PROCOPT=GR
+*
+         PSBGEN LANG=COBOL,PSBNAME=PSBPLI01
+         END

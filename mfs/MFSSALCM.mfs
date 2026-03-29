@@ -1,0 +1,220 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: SALE COMPLETION / CLOSING                         *
+*  TRANSACTION: AUTOSCLS                                         *
+*  DESCRIPTION: Final sale closing with checklist and delivery   *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+SALCMI   MID
+         SEG
+         MFLD  'AUTOSCLS',LTH=8
+         MFLD  DEALNUM,LTH=8
+         MFLD  CHKTRD,LTH=1
+         MFLD  CHKINS,LTH=1
+         MFLD  CHKCRD,LTH=1
+         MFLD  DWNMTH,LTH=8
+         MFLD  DWNAMT,LTH=10
+         MFLD  DLVDAT,LTH=10
+         MFLD  DLVNOT,LTH=60
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+SALCMO   MOD
+         SEG
+         MFLD  (DEALNUM,LTH=8)
+         MFLD  (DLSTAT,LTH=10)
+         MFLD  (CUSTID,LTH=10)
+         MFLD  (CSNAME,LTH=25)
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYMM,LTH=20)
+         MFLD  (TOTPRC,LTH=10)
+         MFLD  (TRDALL,LTH=10)
+         MFLD  (AMTFIN,LTH=10)
+         MFLD  (CHKTRD,LTH=1)
+         MFLD  (CHKINS,LTH=1)
+         MFLD  (CHKCRD,LTH=1)
+         MFLD  (DWNMTH,LTH=8)
+         MFLD  (DWNAMT,LTH=10)
+         MFLD  (DLVDAT,LTH=10)
+         MFLD  (DLVNOT,LTH=60)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+SALCMDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((12,32))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    SALE COMPLETION / CLOSING',                X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-5: DEAL INFO ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(4,20),ATTR=(PROT,BRT)
+         DFLD  DLSTAT,POS=(4,28),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'CUSTOMER:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  CUSTID,POS=(5,11),LTH=10,ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(5,22),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 6: VEHICLE ---
+         DFLD  'VEHICLE:',POS=(6,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(6,10),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(6,28),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 7-8: DEAL SUMMARY ---
+         DFLD  '--- DEAL SUMMARY ---',POS=(7,1),ATTR=(PROT,BRT)
+         DFLD  'TOTAL PRICE:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  TOTPRC,POS=(8,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TRADE ALLOW:',POS=(8,32),ATTR=(PROT,NORM)
+         DFLD  TRDALL,POS=(8,47),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'AMT FINANCED:',POS=(8,60),ATTR=(PROT,NORM)
+*
+         DFLD  AMTFIN,POS=(9,60),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 10: SEPARATOR ---
+         DFLD  '--- CLOSING CHECKLIST ---',POS=(10,1),ATTR=(PROT,BRT)
+*
+* --- ROW 11-13: CHECKLIST ---
+         DFLD  'TRADE TITLE RECEIVED (Y/N):',POS=(11,3),                X
+               ATTR=(PROT,NORM)
+         DFLD  CHKTRD,POS=(11,32),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  'INSURANCE VERIFIED (Y/N):',POS=(12,3),                  X
+               ATTR=(PROT,NORM)
+         DFLD  CHKINS,POS=(12,32),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  'CREDIT APPROVED  (Y/N):',POS=(13,3),                    X
+               ATTR=(PROT,NORM)
+         DFLD  CHKCRD,POS=(13,32),LTH=1,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 14: SEPARATOR ---
+         DFLD  '--- DOWN PAYMENT ---',POS=(14,1),ATTR=(PROT,BRT)
+*
+* --- ROW 15-16: PAYMENT ---
+         DFLD  'METHOD:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  DWNMTH,POS=(15,11),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  '(CASH/CHECK/CARD)',POS=(15,21),ATTR=(PROT,NORM)
+         DFLD  'AMOUNT:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  DWNAMT,POS=(16,11),LTH=10,ATTR=(UNPROT,NUM)
+*
+* --- ROW 17: SEPARATOR ---
+         DFLD  '--- DELIVERY ---',POS=(17,1),ATTR=(PROT,BRT)
+*
+* --- ROW 18-20: DELIVERY ---
+         DFLD  'DELIVERY DATE:',POS=(18,3),ATTR=(PROT,NORM)
+         DFLD  DLVDAT,POS=(18,18),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  'DELIVERY NOTES:',POS=(19,3),ATTR=(PROT,NORM)
+         DFLD  DLVNOT,POS=(20,3),LTH=60,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=COMPLETE SALE  PF6=PRINT DOCS',               X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+SALCMDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((11,32))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    SALE COMPLETION / CLOSING',                X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-5: DEAL INFO ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(4,20),ATTR=(PROT,BRT)
+         DFLD  DLSTAT,POS=(4,28),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'CUSTOMER:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  CUSTID,POS=(5,11),LTH=10,ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(5,22),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 6: VEHICLE ---
+         DFLD  'VEHICLE:',POS=(6,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(6,10),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(6,28),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 7-8: DEAL SUMMARY ---
+         DFLD  '--- DEAL SUMMARY ---',POS=(7,1),ATTR=(PROT,BRT)
+         DFLD  'TOTAL PRICE:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  TOTPRC,POS=(8,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TRADE ALLOW:',POS=(8,32),ATTR=(PROT,NORM)
+         DFLD  TRDALL,POS=(8,47),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'AMT FINANCED:',POS=(8,60),ATTR=(PROT,NORM)
+*
+         DFLD  AMTFIN,POS=(9,60),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 10: SEPARATOR ---
+         DFLD  '--- CLOSING CHECKLIST ---',POS=(10,1),ATTR=(PROT,BRT)
+*
+* --- ROW 11-13: CHECKLIST ---
+         DFLD  'TRADE TITLE RECEIVED (Y/N):',POS=(11,3),                X
+               ATTR=(PROT,NORM)
+         DFLD  CHKTRD,POS=(11,32),LTH=1,ATTR=(PROT,NORM)
+         DFLD  'INSURANCE VERIFIED (Y/N):',POS=(12,3),                  X
+               ATTR=(PROT,NORM)
+         DFLD  CHKINS,POS=(12,32),LTH=1,ATTR=(PROT,NORM)
+         DFLD  'CREDIT APPROVED  (Y/N):',POS=(13,3),                    X
+               ATTR=(PROT,NORM)
+         DFLD  CHKCRD,POS=(13,32),LTH=1,ATTR=(PROT,NORM)
+*
+* --- ROW 14: SEPARATOR ---
+         DFLD  '--- DOWN PAYMENT ---',POS=(14,1),ATTR=(PROT,BRT)
+*
+* --- ROW 15-16: PAYMENT ---
+         DFLD  'METHOD:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  DWNMTH,POS=(15,11),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'AMOUNT:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  DWNAMT,POS=(16,11),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 17: SEPARATOR ---
+         DFLD  '--- DELIVERY ---',POS=(17,1),ATTR=(PROT,BRT)
+*
+* --- ROW 18-20: DELIVERY ---
+         DFLD  'DELIVERY DATE:',POS=(18,3),ATTR=(PROT,NORM)
+         DFLD  DLVDAT,POS=(18,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DELIVERY NOTES:',POS=(19,3),ATTR=(PROT,NORM)
+         DFLD  DLVNOT,POS=(20,3),LTH=60,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=COMPLETE SALE  PF6=PRINT DOCS',               X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

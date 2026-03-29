@@ -1,0 +1,18 @@
+*================================================================*
+*  PSBSTK01 - STOCK PROGRAMS PSB                                 *
+*  AUTOSALES - Automotive Dealer Sales & Reporting System        *
+*  Access: I/O PCB, DBDAUTO1 full access                        *
+*================================================================*
+*
+*------- I/O PCB FOR TERMINAL PROCESSING -------------------------*
+         PCB   TYPE=TP,MODIFY=YES
+*
+*------- DBDAUTO1 - VEHICLE & INVENTORY (FULL ACCESS) -----------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO1,PROCOPT=A,KEYLEN=17
+         SENSEG NAME=VEHICLE,PARENT=0,PROCOPT=A
+         SENSEG NAME=VEHOPT,PARENT=VEHICLE,PROCOPT=A
+         SENSEG NAME=VEHSTAT,PARENT=VEHICLE,PROCOPT=A
+         SENSEG NAME=LOTLOC,PARENT=VEHICLE,PROCOPT=A
+*
+         PSBGEN LANG=COBOL,PSBNAME=PSBSTK01
+         END

@@ -1,0 +1,144 @@
+//*********************************************************************
+//* JCL:      JCLGLINT
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  GL INTERFACE EXTRACT
+//*           1. EXECUTE BATGLINT - EXTRACT JOURNAL ENTRIES FROM
+//*              COMPLETED DEALS, COMMISSIONS, FLOOR PLAN INTEREST
+//*           2. SORT BY GL ACCOUNT/COST CENTER FOR ERP IMPORT
+//*           3. FTP TO GL SYSTEM LANDING ZONE
+//* SCHEDULE: DAILY 23:00 CST (AFTER DAILY CLOSE)
+//* ON ERROR: CRITICAL - NOTIFY FINANCE AND IT SUPPORT
+//*********************************************************************
+//AUTOSLGL JOB (ACCT),'AUTOSALES-GLINT',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE GL INTERFACE EXTRACT (IMS BMP)
+//*-------------------------------------------------------------------
+//GLEXT    EXEC IMSBATCH,MBR=BATGLINT,
+//         PSB=PSBFIN01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//GLRAW    DD DSN=AUTOSALE.WORK.GLINT.RAWEXT,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(30,10),RLSE),
+//         DCB=(RECFM=FB,LRECL=300,BLKSIZE=0)
+//CTLCARD  DD *
+  EXTRACT-DATE=&LYYMMDD
+  JOURNAL-TYPE=ALL
+  INCLUDE-SALES=Y
+  INCLUDE-COMMISSION=Y
+  INCLUDE-FLOORPLAN=Y
+  INCLUDE-WARRANTY=Y
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - SORT BY GL ACCOUNT AND COST CENTER
+//*-------------------------------------------------------------------
+//SORTGL   EXEC PGM=ICETOOL,COND=(4,LT,GLEXT)
+//TOOLMSG  DD SYSOUT=*
+//DFSMSG   DD SYSOUT=*
+//INGL     DD DSN=AUTOSALE.WORK.GLINT.RAWEXT,DISP=SHR
+//OUTGL    DD DSN=AUTOSALE.WORK.GLINT.SORTED,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(30,10),RLSE),
+//         DCB=(RECFM=FB,LRECL=300,BLKSIZE=0)
+//OUTSUM   DD DSN=AUTOSALE.WORK.GLINT.SUMMARY,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=120,BLKSIZE=0)
+//OUTRPT   DD SYSOUT=*
+//TOOLIN   DD *
+  SORT FROM(INGL) TO(OUTGL) USING(GLAC)
+  DISPLAY FROM(OUTGL) LIST(OUTRPT) -
+    TITLE('GL INTERFACE SUMMARY BY ACCOUNT') -
+    HEADER('ACCOUNT') ON(1,10,CH) -
+    HEADER('COST CTR') ON(11,6,CH) -
+    HEADER('DEBIT') ON(17,13,ZD,A2) -
+    HEADER('CREDIT') ON(30,13,ZD,A2) -
+    HEADER('COUNT') ON(VALCNT)
+/*
+//GLACCNTL DD *
+  SORT FIELDS=(1,10,CH,A,11,6,CH,A,43,2,CH,A)
+  INREC IFTHEN=(WHEN=(43,2,CH,EQ,C'DR'),
+                OVERLAY=(17:17,13)),
+        IFTHEN=(WHEN=(43,2,CH,EQ,C'CR'),
+                OVERLAY=(30:17,13))
+  SUM FIELDS=(17,13,ZD,30,13,ZD)
+  OUTFIL FNAMES=OUTSUM,
+    OUTREC=(1,10,C',',11,6,C',',17,13,ZD,EDIT=(STTTTTTTTTT.TT),
+            C',',30,13,ZD,EDIT=(STTTTTTTTTT.TT))
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP030 - GENERATE CONTROL TOTALS FILE
+//*-------------------------------------------------------------------
+//CTRLTOT  EXEC PGM=ICETOOL,COND=(4,LT,GLEXT)
+//TOOLMSG  DD SYSOUT=*
+//DFSMSG   DD SYSOUT=*
+//INCTL    DD DSN=AUTOSALE.WORK.GLINT.SORTED,DISP=SHR
+//OUTCTL   DD DSN=AUTOSALE.WORK.GLINT.CONTROL,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(TRK,(1,1),RLSE),
+//         DCB=(RECFM=FB,LRECL=80,BLKSIZE=0)
+//TOOLIN   DD *
+  COUNT FROM(INCTL) WRITE(OUTCTL) TEXT('RECORD COUNT: ')
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP040 - FTP GL FILE TO ERP SYSTEM
+//*-------------------------------------------------------------------
+//FTP      EXEC PGM=FTP,PARM='(EXIT',COND=(4,LT,SORTGL)
+//SYSPRINT DD SYSOUT=*
+//OUTPUT   DD SYSOUT=*
+//INPUT    DD *
+  GLSYSTEM.CORP.COM 21
+  AUTOSALES_GL
+  XXXXXXXX
+  ASCII
+  CD /inbound/autosales/gl
+  PUT 'AUTOSALE.WORK.GLINT.SUMMARY' gl_journal.csv
+  PUT 'AUTOSALE.WORK.GLINT.CONTROL' gl_control.txt
+  QUIT
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP050 - ARCHIVE AND CLEANUP
+//*-------------------------------------------------------------------
+//ARCHIVE  EXEC PGM=IEBGENER,COND=(4,LT,FTP)
+//SYSUT1   DD DSN=AUTOSALE.WORK.GLINT.SORTED,DISP=SHR
+//SYSUT2   DD DSN=AUTOSALE.PROD.ARCHIVE.GLINT(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(30,10),RLSE),
+//         DCB=(RECFM=FB,LRECL=300,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//*
+//CLEANUP  EXEC PGM=IEFBR14,COND=(4,LT,FTP)
+//DEL1     DD DSN=AUTOSALE.WORK.GLINT.RAWEXT,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL2     DD DSN=AUTOSALE.WORK.GLINT.SORTED,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL3     DD DSN=AUTOSALE.WORK.GLINT.SUMMARY,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL4     DD DSN=AUTOSALE.WORK.GLINT.CONTROL,
+//         DISP=(OLD,DELETE,DELETE)
+//

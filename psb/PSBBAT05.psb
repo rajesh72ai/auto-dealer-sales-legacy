@@ -1,0 +1,24 @@
+*================================================================*
+*  PSBBAT05 - BATCH PRODUCTION INBOUND PROGRAMS PSB              *
+*  AUTOSALES - Automotive Dealer Sales & Reporting System        *
+*  Access: DBDAUTO1 update, DBDAUTO3 full, no I/O PCB (batch)  *
+*  Used by: Inbound production order feeds from manufacturers,   *
+*           VIN assignment, shipment status updates               *
+*================================================================*
+*
+*------- DBDAUTO1 - VEHICLE & INVENTORY (UPDATE) ----------------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO1,PROCOPT=GRI,KEYLEN=17
+         SENSEG NAME=VEHICLE,PARENT=0,PROCOPT=GRI
+         SENSEG NAME=VEHOPT,PARENT=VEHICLE,PROCOPT=GRI
+         SENSEG NAME=VEHSTAT,PARENT=VEHICLE,PROCOPT=GI
+         SENSEG NAME=LOTLOC,PARENT=VEHICLE,PROCOPT=GRI
+*
+*------- DBDAUTO3 - PRODUCTION & LOGISTICS (FULL ACCESS) --------*
+         PCB   TYPE=DB,DBDNAME=DBDAUTO3,PROCOPT=A,KEYLEN=12
+         SENSEG NAME=PRODORDR,PARENT=0,PROCOPT=A
+         SENSEG NAME=SHIPMENT,PARENT=PRODORDR,PROCOPT=A
+         SENSEG NAME=SHIPMVEH,PARENT=SHIPMENT,PROCOPT=A
+         SENSEG NAME=TRANSIT,PARENT=PRODORDR,PROCOPT=A
+*
+         PSBGEN LANG=COBOL,PSBNAME=PSBBAT05
+         END

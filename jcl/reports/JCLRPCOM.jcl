@@ -1,0 +1,55 @@
+//*********************************************************************
+//* JCL:      JCLRPCOM
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  COMMISSION REPORT
+//*           RUNS RPTCOM00 - SALESPERSON COMMISSION DETAIL AND
+//*           SUMMARY BY DEALER, WITH DRAW BALANCE AND PAYOUTS
+//* SCHEDULE: 2ND BUSINESS DAY OF MONTH (AFTER MONTHLY CLOSE)
+//* OVERRIDE: CHANGE PARM DATE FOR HISTORICAL RERUN
+//*********************************************************************
+//AUTOSLR4 JOB (ACCT),'AUTOSALES-RPCOM',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//RPTOUT   OUTPUT JESDS=ALL,CLASS=A,
+//         DEST=LOCAL,COPIES=1,
+//         FORMS=STD132
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE COMMISSION REPORT (IMS BMP)
+//*-------------------------------------------------------------------
+//RPTCOM   EXEC IMSBATCH,MBR=RPTCOM00,
+//         PSB=PSBRPT01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD DSN=AUTOSALE.PROD.REPORT.COMMISSN(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(10,5),RLSE),
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//SYSIN    DD *
+  REPORT-DATE=&LYYMMDD
+  COMMISSION-MONTH=&LYYMMDD
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - PRINT REPORT
+//*-------------------------------------------------------------------
+//PRINT    EXEC PGM=IEBGENER,COND=(4,LT,RPTCOM)
+//SYSUT1   DD DSN=AUTOSALE.PROD.REPORT.COMMISSN(&LYYMMDD),DISP=SHR
+//SYSUT2   DD SYSOUT=A,OUTPUT=*.RPTOUT,
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//

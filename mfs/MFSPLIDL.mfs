@@ -1,0 +1,217 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: DELIVERY CONFIRMATION                             *
+*  TRANSACTION: AUTODLCF                                         *
+*  DESCRIPTION: Confirm vehicle delivery with PDI and inspection *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+PLIDLI   MID
+         SEG
+         MFLD  'AUTODLCF',LTH=8
+         MFLD  SHPID,LTH=10
+         MFLD  VINNUM,LTH=17
+         MFLD  PDICHK,LTH=1
+         MFLD  DMGCHK,LTH=1
+         MFLD  ODOMTR,LTH=7
+         MFLD  LOTLOC,LTH=8
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+PLIDLO   MOD
+         SEG
+         MFLD  (SHPID,LTH=10)
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYR,LTH=4)
+         MFLD  (VHMAKE,LTH=12)
+         MFLD  (VHMODL,LTH=12)
+         MFLD  (VHCLR,LTH=10)
+         MFLD  (VHSTK,LTH=8)
+         MFLD  (SHPORI,LTH=15)
+         MFLD  (SHPCAR,LTH=15)
+         MFLD  (SHPDAT,LTH=10)
+         MFLD  (ARVDAT,LTH=10)
+         MFLD  (PDICHK,LTH=1)
+         MFLD  (DMGCHK,LTH=1)
+         MFLD  (ODOMTR,LTH=7)
+         MFLD  (LOTLOC,LTH=8)
+         MFLD  (DLVSTS,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+PLIDLDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,16))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      DELIVERY CONFIRMATION',                  X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-5: LOOKUP ---
+         DFLD  'SHIPMENT ID:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  SHPID,POS=(4,16),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  'OR VIN:',POS=(4,30),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(4,38),LTH=17,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 6: SEPARATOR ---
+         DFLD  '--- VEHICLE DETAILS ---',POS=(6,1),ATTR=(PROT,BRT)
+*
+* --- ROW 7-9: VEHICLE INFO ---
+         DFLD  'YEAR:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  VHYR,POS=(7,9),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(7,15),ATTR=(PROT,NORM)
+         DFLD  VHMAKE,POS=(7,21),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'MODEL:',POS=(7,35),ATTR=(PROT,NORM)
+         DFLD  VHMODL,POS=(7,42),LTH=12,ATTR=(PROT,NORM)
+*
+         DFLD  'COLOR:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  VHCLR,POS=(8,10),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'STOCK#:',POS=(8,22),ATTR=(PROT,NORM)
+         DFLD  VHSTK,POS=(8,30),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROW 10: SEPARATOR ---
+         DFLD  '--- SHIPMENT DETAILS ---',POS=(10,1),ATTR=(PROT,BRT)
+*
+* --- ROW 11-13: SHIPMENT ---
+         DFLD  'ORIGIN:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  SHPORI,POS=(11,11),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'CARRIER:',POS=(11,30),ATTR=(PROT,NORM)
+         DFLD  SHPCAR,POS=(11,39),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'SHIP DATE:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  SHPDAT,POS=(12,14),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'ARRIVAL DATE:',POS=(12,28),ATTR=(PROT,NORM)
+         DFLD  ARVDAT,POS=(12,42),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 14: SEPARATOR ---
+         DFLD  '--- DELIVERY INSPECTION ---',POS=(14,1),ATTR=(PROT,BRT)
+*
+* --- ROW 15-18: INSPECTION ---
+         DFLD  'PDI COMPLETE (Y/N):',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  PDICHK,POS=(15,24),LTH=1,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'DAMAGE INSPECTION OK (Y/N):',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  DMGCHK,POS=(16,31),LTH=1,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'ODOMETER READING:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  ODOMTR,POS=(17,22),LTH=7,ATTR=(UNPROT,NUM)
+*
+         DFLD  'LOT LOCATION:',POS=(18,3),ATTR=(PROT,NORM)
+         DFLD  LOTLOC,POS=(18,17),LTH=8,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 19: STATUS ---
+         DFLD  ' ',POS=(19,1),ATTR=(PROT,NORM)
+         DFLD  'DELIVERY STATUS:',POS=(20,3),ATTR=(PROT,NORM)
+         DFLD  DLVSTS,POS=(20,20),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=CONFIRM DELIVERY',POS=(23,1),           X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+PLIDLDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,16))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      DELIVERY CONFIRMATION',                  X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: LOOKUP ---
+         DFLD  'SHIPMENT ID:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  SHPID,POS=(4,16),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'OR VIN:',POS=(4,30),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(4,38),LTH=17,ATTR=(PROT,NORM)
+*
+* --- ROW 6: SEPARATOR ---
+         DFLD  '--- VEHICLE DETAILS ---',POS=(6,1),ATTR=(PROT,BRT)
+*
+* --- ROW 7-8: VEHICLE INFO ---
+         DFLD  'YEAR:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  VHYR,POS=(7,9),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(7,15),ATTR=(PROT,NORM)
+         DFLD  VHMAKE,POS=(7,21),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'MODEL:',POS=(7,35),ATTR=(PROT,NORM)
+         DFLD  VHMODL,POS=(7,42),LTH=12,ATTR=(PROT,NORM)
+*
+         DFLD  'COLOR:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  VHCLR,POS=(8,10),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'STOCK#:',POS=(8,22),ATTR=(PROT,NORM)
+         DFLD  VHSTK,POS=(8,30),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROW 10: SEPARATOR ---
+         DFLD  '--- SHIPMENT DETAILS ---',POS=(10,1),ATTR=(PROT,BRT)
+*
+* --- ROW 11-12: SHIPMENT ---
+         DFLD  'ORIGIN:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  SHPORI,POS=(11,11),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'CARRIER:',POS=(11,30),ATTR=(PROT,NORM)
+         DFLD  SHPCAR,POS=(11,39),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'SHIP DATE:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  SHPDAT,POS=(12,14),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'ARRIVAL DATE:',POS=(12,28),ATTR=(PROT,NORM)
+         DFLD  ARVDAT,POS=(12,42),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 14: SEPARATOR ---
+         DFLD  '--- DELIVERY INSPECTION ---',POS=(14,1),ATTR=(PROT,BRT)
+*
+* --- ROW 15-18: INSPECTION ---
+         DFLD  'PDI COMPLETE (Y/N):',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  PDICHK,POS=(15,24),LTH=1,ATTR=(PROT,NORM)
+*
+         DFLD  'DAMAGE INSPECTION OK (Y/N):',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  DMGCHK,POS=(16,31),LTH=1,ATTR=(PROT,NORM)
+*
+         DFLD  'ODOMETER READING:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  ODOMTR,POS=(17,22),LTH=7,ATTR=(PROT,NORM)
+*
+         DFLD  'LOT LOCATION:',POS=(18,3),ATTR=(PROT,NORM)
+         DFLD  LOTLOC,POS=(18,17),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROW 20: STATUS ---
+         DFLD  ' ',POS=(19,1),ATTR=(PROT,NORM)
+         DFLD  'DELIVERY STATUS:',POS=(20,3),ATTR=(PROT,NORM)
+         DFLD  DLVSTS,POS=(20,20),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=CONFIRM DELIVERY',POS=(23,1),           X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

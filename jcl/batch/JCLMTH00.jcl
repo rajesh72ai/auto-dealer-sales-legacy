@@ -1,0 +1,126 @@
+//*********************************************************************
+//* JCL:      JCLMTH00
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  MONTHLY CLOSE PROCESSING
+//*           1. EXECUTE BATMTH00 - MONTHLY SNAPSHOTS, COMMISSION
+//*              CALCULATIONS, INCENTIVE RECONCILIATION
+//*           2. POST-STEP DB2 RUNSTATS ON HIGH-ACTIVITY TABLES
+//* SCHEDULE: 1ST BUSINESS DAY OF MONTH, 04:00 CST
+//* ON ERROR: CONTACT ON-CALL DBA / BATCH SUPPORT
+//*********************************************************************
+//AUTOSLM0 JOB (ACCT),'AUTOSALES-MONTHLY',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE MONTHLY CLOSE BATCH (IMS BMP)
+//*-------------------------------------------------------------------
+//MONTHLY  EXEC IMSBATCH,MBR=BATMTH00,
+//         PSB=PSBBAT03,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//CTLCARD  DD *
+  CLOSE-MONTH=&LYYMMDD
+  CHECKPOINT-FREQ=500
+  COMMISSION-CALC=Y
+  INCENTIVE-RECON=Y
+  SNAPSHOT=Y
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - RUNSTATS ON SALES_DEAL TABLE AND INDEXES
+//*-------------------------------------------------------------------
+//RUNST01  EXEC PGM=IKJEFT01,
+//         COND=(4,LT,MONTHLY)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  RUNSTATS TABLESPACE AUTODB.TSSLDEAL
+    TABLE(AUTOSALE.SALES_DEAL)
+    INDEX(ALL)
+    SHRLEVEL CHANGE
+    UPDATE ALL
+    REPORT YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP030 - RUNSTATS ON VEHICLE TABLE AND INDEXES
+//*-------------------------------------------------------------------
+//RUNST02  EXEC PGM=IKJEFT01,
+//         COND=(4,LT,MONTHLY)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  RUNSTATS TABLESPACE AUTODB.TSVEHICL
+    TABLE(AUTOSALE.VEHICLE)
+    INDEX(ALL)
+    SHRLEVEL CHANGE
+    UPDATE ALL
+    REPORT YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP040 - RUNSTATS ON COMMISSION AND MONTHLY_SNAPSHOT
+//*-------------------------------------------------------------------
+//RUNST03  EXEC PGM=IKJEFT01,
+//         COND=(4,LT,MONTHLY)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  RUNSTATS TABLESPACE AUTODB.TSCOMMIS
+    TABLE(AUTOSALE.COMMISSION)
+    INDEX(ALL)
+    SHRLEVEL CHANGE
+    UPDATE ALL
+    REPORT YES;
+  RUNSTATS TABLESPACE AUTODB.TSMNSNAP
+    TABLE(AUTOSALE.MONTHLY_SNAPSHOT)
+    INDEX(ALL)
+    SHRLEVEL CHANGE
+    UPDATE ALL
+    REPORT YES;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP050 - UPDATE RESTART CONTROL
+//*-------------------------------------------------------------------
+//UPDRSTRT EXEC PGM=IKJEFT01,
+//         COND=(4,LT,MONTHLY)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  UPDATE AUTOSALE.RESTART_CONTROL
+  SET LAST_RUN_DATE = CURRENT DATE,
+      LAST_RUN_TIME = CURRENT TIME,
+      RUN_STATUS    = 'C'
+  WHERE PROGRAM_ID = 'BATMTH00';
+/*
+//

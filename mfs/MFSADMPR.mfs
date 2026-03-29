@@ -1,0 +1,217 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: PRICING MASTER MAINTENANCE                        *
+*  TRANSACTION: AUTOPRC                                          *
+*  DESCRIPTION: Add/update vehicle pricing and fee schedules     *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+ADMPRI   MID
+         SEG
+         MFLD  'AUTOPRC ',LTH=8
+         MFLD  ACTEFLAG,LTH=1
+         MFLD  MDLYEAR,LTH=4
+         MFLD  MAKCODE,LTH=5
+         MFLD  MDLCODE,LTH=5
+         MFLD  MSRP,LTH=10
+         MFLD  INVOICE,LTH=10
+         MFLD  HLDBAMT,LTH=10
+         MFLD  HLDBPCT,LTH=5
+         MFLD  DESTFEE,LTH=8
+         MFLD  ADFEE,LTH=8
+         MFLD  EFFDATE,LTH=10
+         MFLD  EXPDATE,LTH=10
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+ADMPRO   MOD
+         SEG
+         MFLD  (ACTEFLAG,LTH=1)
+         MFLD  (MDLYEAR,LTH=4)
+         MFLD  (MAKCODE,LTH=5)
+         MFLD  (MAKNAME,LTH=20)
+         MFLD  (MDLCODE,LTH=5)
+         MFLD  (MDLNAME,LTH=25)
+         MFLD  (MSRP,LTH=10)
+         MFLD  (INVOICE,LTH=10)
+         MFLD  (HLDBAMT,LTH=10)
+         MFLD  (HLDBPCT,LTH=5)
+         MFLD  (DESTFEE,LTH=8)
+         MFLD  (ADFEE,LTH=8)
+         MFLD  (EFFDATE,LTH=10)
+         MFLD  (EXPDATE,LTH=10)
+         MFLD  (MARGIN,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+ADMPRDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    PRICING MASTER MAINTENANCE',             X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  '(A=ADD, U=UPDATE, I=INQUIRE)',                               X
+               POS=(4,29),ATTR=(PROT,NORM)
+*
+* --- ROWS 5-7: VEHICLE IDENTIFICATION ---
+         DFLD  ' ',POS=(5,1),ATTR=(PROT,NORM)
+         DFLD  '--- VEHICLE IDENTIFICATION ---',POS=(5,5),ATTR=(PROT,BRT)
+*
+         DFLD  'MODEL YEAR:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(6,26),LTH=4,ATTR=(UNPROT,NUM)
+*
+         DFLD  'MAKE CODE:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MAKCODE,POS=(7,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  MAKNAME,POS=(7,33),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL CODE:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLCODE,POS=(8,26),LTH=5,ATTR=(UNPROT,ALPHA)
+         DFLD  MDLNAME,POS=(8,33),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROWS 10-15: PRICING FIELDS ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+         DFLD  '--- PRICING ---',POS=(10,5),ATTR=(PROT,BRT)
+*
+         DFLD  'MSRP:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  MSRP,POS=(11,26),LTH=10,ATTR=(UNPROT,NUM)
+*
+         DFLD  'INVOICE:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  INVOICE,POS=(12,26),LTH=10,ATTR=(UNPROT,NUM)
+*
+         DFLD  'HOLDBACK AMT:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  HLDBAMT,POS=(13,26),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'HOLDBACK PCT:',POS=(13,42),ATTR=(PROT,BRT)
+         DFLD  HLDBPCT,POS=(13,56),LTH=5,ATTR=(UNPROT,NUM)
+*
+         DFLD  'DESTINATION FEE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  DESTFEE,POS=(14,26),LTH=8,ATTR=(UNPROT,NUM)
+*
+         DFLD  'AD FEE:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  ADFEE,POS=(15,26),LTH=8,ATTR=(UNPROT,NUM)
+*
+         DFLD  'DEALER MARGIN:',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  MARGIN,POS=(16,26),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROWS 18-19: EFFECTIVE DATES ---
+         DFLD  ' ',POS=(17,1),ATTR=(PROT,NORM)
+         DFLD  '--- EFFECTIVE DATES ---',POS=(18,5),ATTR=(PROT,BRT)
+*
+         DFLD  'EFFECTIVE DATE:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  EFFDATE,POS=(19,26),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  '(MM/DD/YYYY)',POS=(19,38),ATTR=(PROT,NORM)
+*
+         DFLD  'EXPIRY DATE:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  EXPDATE,POS=(20,26),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  '(MM/DD/YYYY)',POS=(20,38),ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE',                           X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+ADMPRDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                    PRICING MASTER MAINTENANCE',             X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,26),LTH=1,ATTR=(PROT,NORM)
+*
+* --- ROWS 5-8: VEHICLE IDENTIFICATION ---
+         DFLD  '--- VEHICLE IDENTIFICATION ---',POS=(5,5),ATTR=(PROT,BRT)
+*
+         DFLD  'MODEL YEAR:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  MDLYEAR,POS=(6,26),LTH=4,ATTR=(PROT,NORM)
+*
+         DFLD  'MAKE CODE:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  MAKCODE,POS=(7,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  MAKNAME,POS=(7,33),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'MODEL CODE:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  MDLCODE,POS=(8,26),LTH=5,ATTR=(PROT,NORM)
+         DFLD  MDLNAME,POS=(8,33),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROWS 10-16: PRICING FIELDS ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+         DFLD  '--- PRICING ---',POS=(10,5),ATTR=(PROT,BRT)
+*
+         DFLD  'MSRP:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  MSRP,POS=(11,26),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'INVOICE:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  INVOICE,POS=(12,26),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'HOLDBACK AMT:',POS=(13,5),ATTR=(PROT,BRT)
+         DFLD  HLDBAMT,POS=(13,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'HOLDBACK PCT:',POS=(13,42),ATTR=(PROT,BRT)
+         DFLD  HLDBPCT,POS=(13,56),LTH=5,ATTR=(PROT,NORM)
+*
+         DFLD  'DESTINATION FEE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  DESTFEE,POS=(14,26),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'AD FEE:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  ADFEE,POS=(15,26),LTH=8,ATTR=(PROT,NORM)
+*
+         DFLD  'DEALER MARGIN:',POS=(16,5),ATTR=(PROT,BRT)
+         DFLD  MARGIN,POS=(16,26),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROWS 18-20: EFFECTIVE DATES ---
+         DFLD  ' ',POS=(17,1),ATTR=(PROT,NORM)
+         DFLD  '--- EFFECTIVE DATES ---',POS=(18,5),ATTR=(PROT,BRT)
+*
+         DFLD  'EFFECTIVE DATE:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  EFFDATE,POS=(19,26),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'EXPIRY DATE:',POS=(20,5),ATTR=(PROT,BRT)
+         DFLD  EXPDATE,POS=(20,26),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE',                           X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

@@ -1,0 +1,58 @@
+//*********************************************************************
+//* JCL:      JCLRPSUP
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  SUPPLY CHAIN / PIPELINE REPORT
+//*           RUNS RPTSUP00 - PRODUCTION ORDERS IN PIPELINE,
+//*           SHIPMENT STATUS, TRANSIT TRACKING, EXPECTED
+//*           ARRIVAL DATES, ALLOCATION VS DEMAND
+//* SCHEDULE: DAILY 09:00 CST
+//* OVERRIDE: CHANGE PARM DATE FOR HISTORICAL RERUN
+//*********************************************************************
+//AUTOSLRE JOB (ACCT),'AUTOSALES-RPSUP',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//RPTOUT   OUTPUT JESDS=ALL,CLASS=A,
+//         DEST=LOCAL,COPIES=1,
+//         FORMS=STD132
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE SUPPLY CHAIN REPORT (IMS BMP)
+//*-------------------------------------------------------------------
+//RPTSUP   EXEC IMSBATCH,MBR=RPTSUP00,
+//         PSB=PSBRPT01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD DSN=AUTOSALE.PROD.REPORT.SUPPLY(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(10,5),RLSE),
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//SYSIN    DD *
+  REPORT-DATE=&LYYMMDD
+  INCLUDE-PRODUCTION=Y
+  INCLUDE-TRANSIT=Y
+  INCLUDE-ALLOCATION=Y
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - PRINT REPORT
+//*-------------------------------------------------------------------
+//PRINT    EXEC PGM=IEBGENER,COND=(4,LT,RPTSUP)
+//SYSUT1   DD DSN=AUTOSALE.PROD.REPORT.SUPPLY(&LYYMMDD),DISP=SHR
+//SYSUT2   DD SYSOUT=A,OUTPUT=*.RPTOUT,
+//         DCB=(RECFM=FBA,LRECL=133,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//

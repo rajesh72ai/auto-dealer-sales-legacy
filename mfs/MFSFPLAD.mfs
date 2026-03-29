@@ -1,0 +1,187 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: FLOOR PLAN ADD VEHICLE                            *
+*  TRANSACTION: AUTOFPAD                                         *
+*  DESCRIPTION: Add vehicle to floor plan financing              *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+FPLADI   MID
+         SEG
+         MFLD  'AUTOFPAD',LTH=8
+         MFLD  VINNUM,LTH=17
+         MFLD  LNDRID,LTH=8
+         MFLD  INVAMT,LTH=10
+         MFLD  FLRDAT,LTH=10
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+FPLADO   MOD
+         SEG
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYR,LTH=4)
+         MFLD  (VHMAKE,LTH=12)
+         MFLD  (VHMODL,LTH=12)
+         MFLD  (VHCLR,LTH=10)
+         MFLD  (VHSTK,LTH=8)
+         MFLD  (LNDRID,LTH=8)
+         MFLD  (LNDRNA,LTH=20)
+         MFLD  (INVAMT,LTH=10)
+         MFLD  (FLRDAT,LTH=10)
+         MFLD  (CRTDAT,LTH=10)
+         MFLD  (FPSTAT,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+FPLADDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((5,15))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                     FLOOR PLAN - ADD VEHICLE',                X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: INSTRUCTIONS ---
+         DFLD  'ENTER VIN TO FLOOR A VEHICLE:',POS=(4,3),                X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 5-6: VIN INPUT ---
+         DFLD  'VIN:',POS=(5,3),ATTR=(PROT,NORM)
+         DFLD  VINNUM,POS=(5,15),LTH=17,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  '--- VEHICLE DETAILS (AUTO-POPULATED) ---',POS=(7,1),     X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 8-10: VEHICLE INFO ---
+         DFLD  'YEAR:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  VHYR,POS=(8,15),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(8,22),ATTR=(PROT,NORM)
+         DFLD  VHMAKE,POS=(8,28),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'MODEL:',POS=(8,42),ATTR=(PROT,NORM)
+         DFLD  VHMODL,POS=(8,49),LTH=12,ATTR=(PROT,NORM)
+*
+         DFLD  'COLOR:',POS=(9,3),ATTR=(PROT,NORM)
+         DFLD  VHCLR,POS=(9,15),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'STOCK#:',POS=(9,28),ATTR=(PROT,NORM)
+         DFLD  VHSTK,POS=(9,36),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROW 11: SEPARATOR ---
+         DFLD  '--- FLOOR PLAN DETAILS ---',POS=(11,1),ATTR=(PROT,BRT)
+*
+* --- ROW 12-16: FLOOR PLAN FIELDS ---
+         DFLD  'LENDER ID:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  LNDRID,POS=(12,15),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  LNDRNA,POS=(12,24),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'INVOICE AMT:',POS=(13,3),ATTR=(PROT,NORM)
+         DFLD  INVAMT,POS=(13,16),LTH=10,ATTR=(UNPROT,NUM)
+*
+         DFLD  'FLOOR DATE:',POS=(14,3),ATTR=(PROT,NORM)
+         DFLD  FLRDAT,POS=(14,16),LTH=10,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'CURTAIL DATE:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  CRTDAT,POS=(15,17),LTH=10,ATTR=(PROT,BRT)
+         DFLD  '(CALCULATED)',POS=(15,28),ATTR=(PROT,NORM)
+*
+         DFLD  'STATUS:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  FPSTAT,POS=(16,11),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=FLOOR VEHICLE',POS=(23,1),              X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+FPLADDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((5,15))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                     FLOOR PLAN - ADD VEHICLE',                X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: INSTRUCTIONS ---
+         DFLD  'ENTER VIN TO FLOOR A VEHICLE:',POS=(4,3),                X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 5: VIN ---
+         DFLD  'VIN:',POS=(5,3),ATTR=(PROT,NORM)
+         DFLD  VINNUM,POS=(5,15),LTH=17,ATTR=(PROT,NORM)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  '--- VEHICLE DETAILS ---',POS=(7,1),ATTR=(PROT,BRT)
+*
+* --- ROW 8-9: VEHICLE INFO ---
+         DFLD  'YEAR:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  VHYR,POS=(8,15),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(8,22),ATTR=(PROT,NORM)
+         DFLD  VHMAKE,POS=(8,28),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'MODEL:',POS=(8,42),ATTR=(PROT,NORM)
+         DFLD  VHMODL,POS=(8,49),LTH=12,ATTR=(PROT,NORM)
+*
+         DFLD  'COLOR:',POS=(9,3),ATTR=(PROT,NORM)
+         DFLD  VHCLR,POS=(9,15),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'STOCK#:',POS=(9,28),ATTR=(PROT,NORM)
+         DFLD  VHSTK,POS=(9,36),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROW 11: SEPARATOR ---
+         DFLD  '--- FLOOR PLAN DETAILS ---',POS=(11,1),ATTR=(PROT,BRT)
+*
+* --- ROW 12-16: FLOOR PLAN FIELDS ---
+         DFLD  'LENDER ID:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  LNDRID,POS=(12,15),LTH=8,ATTR=(PROT,NORM)
+         DFLD  LNDRNA,POS=(12,24),LTH=20,ATTR=(PROT,NORM)
+*
+         DFLD  'INVOICE AMT:',POS=(13,3),ATTR=(PROT,NORM)
+         DFLD  INVAMT,POS=(13,16),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'FLOOR DATE:',POS=(14,3),ATTR=(PROT,NORM)
+         DFLD  FLRDAT,POS=(14,16),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'CURTAIL DATE:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  CRTDAT,POS=(15,17),LTH=10,ATTR=(PROT,BRT)
+*
+         DFLD  'STATUS:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  FPSTAT,POS=(16,11),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=FLOOR VEHICLE',POS=(23,1),              X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

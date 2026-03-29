@@ -1,0 +1,292 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: CUSTOMER ADD/EDIT                                 *
+*  TRANSACTION: AUTOCAD                                          *
+*  DESCRIPTION: Add or update customer master records            *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+CUSADI   MID
+         SEG
+         MFLD  'AUTOCAD ',LTH=8
+         MFLD  ACTEFLAG,LTH=1
+         MFLD  CUSTID,LTH=8
+         MFLD  LNAME,LTH=20
+         MFLD  FNAME,LTH=15
+         MFLD  MNAME,LTH=1
+         MFLD  DOB,LTH=10
+         MFLD  SSN4,LTH=4
+         MFLD  DLNUM,LTH=15
+         MFLD  DLSTATE,LTH=2
+         MFLD  ADDR1,LTH=30
+         MFLD  ADDR2,LTH=30
+         MFLD  CITY,LTH=20
+         MFLD  STATE,LTH=2
+         MFLD  ZIPCODE,LTH=10
+         MFLD  HMPHONE,LTH=12
+         MFLD  CLPHONE,LTH=12
+         MFLD  EMAIL,LTH=30
+         MFLD  EMPLOYR,LTH=25
+         MFLD  INCOME,LTH=10
+         MFLD  CUSTYPE,LTH=1
+         MFLD  SRCCODE,LTH=4
+         MFLD  ASGNSLP,LTH=8
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+CUSADO   MOD
+         SEG
+         MFLD  (ACTEFLAG,LTH=1)
+         MFLD  (CUSTID,LTH=8)
+         MFLD  (LNAME,LTH=20)
+         MFLD  (FNAME,LTH=15)
+         MFLD  (MNAME,LTH=1)
+         MFLD  (DOB,LTH=10)
+         MFLD  (SSN4,LTH=4)
+         MFLD  (DLNUM,LTH=15)
+         MFLD  (DLSTATE,LTH=2)
+         MFLD  (ADDR1,LTH=30)
+         MFLD  (ADDR2,LTH=30)
+         MFLD  (CITY,LTH=20)
+         MFLD  (STATE,LTH=2)
+         MFLD  (ZIPCODE,LTH=10)
+         MFLD  (HMPHONE,LTH=12)
+         MFLD  (CLPHONE,LTH=12)
+         MFLD  (EMAIL,LTH=30)
+         MFLD  (EMPLOYR,LTH=25)
+         MFLD  (INCOME,LTH=10)
+         MFLD  (CUSTYPE,LTH=1)
+         MFLD  (CUSTDSC,LTH=10)
+         MFLD  (SRCCODE,LTH=4)
+         MFLD  (ASGNSLP,LTH=8)
+         MFLD  (SLPNAME,LTH=20)
+         MFLD  (CRTDATE,LTH=10)
+         MFLD  (UPDDATE,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+CUSADDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,26))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                        CUSTOMER ADD/EDIT',                  X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION & CUSTOMER ID ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,13),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  '(A=ADD, U=UPD, D=DEL, I=INQ)',                              X
+               POS=(4,16),ATTR=(PROT,NORM)
+         DFLD  'CUST ID:',POS=(4,50),ATTR=(PROT,BRT)
+         DFLD  CUSTID,POS=(4,59),LTH=8,ATTR=(UNPROT,ALPHA)
+*
+* --- ROWS 5-8: PERSONAL INFORMATION ---
+         DFLD  'LAST NAME:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  LNAME,POS=(5,26),LTH=20,ATTR=(UNPROT,ALPHA)
+         DFLD  'MI:',POS=(5,50),ATTR=(PROT,BRT)
+         DFLD  MNAME,POS=(5,54),LTH=1,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'FIRST NAME:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  FNAME,POS=(6,26),LTH=15,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'DATE OF BIRTH:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  DOB,POS=(7,26),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  '(MM/DD/YYYY)',POS=(7,38),ATTR=(PROT,NORM)
+         DFLD  'SSN LAST 4:',POS=(7,55),ATTR=(PROT,BRT)
+         DFLD  SSN4,POS=(7,67),LTH=4,ATTR=(UNPROT,NUM)
+*
+         DFLD  'DRIVER LIC#:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  DLNUM,POS=(8,26),LTH=15,ATTR=(UNPROT,ALPHA)
+         DFLD  'DL STATE:',POS=(8,45),ATTR=(PROT,BRT)
+         DFLD  DLSTATE,POS=(8,55),LTH=2,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 9: SEPARATOR ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 10-13: ADDRESS ---
+         DFLD  'ADDRESS LINE 1:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  ADDR1,POS=(10,26),LTH=30,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'ADDRESS LINE 2:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  ADDR2,POS=(11,26),LTH=30,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'CITY:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  CITY,POS=(12,26),LTH=20,ATTR=(UNPROT,ALPHA)
+         DFLD  'ST:',POS=(12,50),ATTR=(PROT,BRT)
+         DFLD  STATE,POS=(12,54),LTH=2,ATTR=(UNPROT,ALPHA)
+         DFLD  'ZIP:',POS=(12,60),ATTR=(PROT,BRT)
+         DFLD  ZIPCODE,POS=(12,65),LTH=10,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 13: SEPARATOR ---
+         DFLD  ' ',POS=(13,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 14-16: CONTACT INFO ---
+         DFLD  'HOME PHONE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  HMPHONE,POS=(14,26),LTH=12,ATTR=(UNPROT,ALPHA)
+         DFLD  'CELL:',POS=(14,42),ATTR=(PROT,BRT)
+         DFLD  CLPHONE,POS=(14,48),LTH=12,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'EMAIL:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  EMAIL,POS=(15,26),LTH=30,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 16: SEPARATOR ---
+         DFLD  ' ',POS=(16,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 17-18: EMPLOYMENT ---
+         DFLD  'EMPLOYER:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  EMPLOYR,POS=(17,26),LTH=25,ATTR=(UNPROT,ALPHA)
+         DFLD  'INCOME:',POS=(17,55),ATTR=(PROT,BRT)
+         DFLD  INCOME,POS=(17,63),LTH=10,ATTR=(UNPROT,NUM)
+*
+* --- ROWS 18-19: CLASSIFICATION ---
+         DFLD  'CUSTOMER TYPE:',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  CUSTYPE,POS=(18,26),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  CUSTDSC,POS=(18,29),LTH=10,ATTR=(PROT,NORM)
+         DFLD  '(P=PROSPECT, B=BUYER, R=REPEAT)',                           X
+               POS=(18,41),ATTR=(PROT,NORM)
+*
+         DFLD  'SOURCE CODE:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  SRCCODE,POS=(19,26),LTH=4,ATTR=(UNPROT,ALPHA)
+         DFLD  'SALES PERSON:',POS=(19,35),ATTR=(PROT,BRT)
+         DFLD  ASGNSLP,POS=(19,49),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  SLPNAME,POS=(19,59),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 20-21: AUDIT ---
+         DFLD  ' ',POS=(20,1),ATTR=(PROT,NORM)
+         DFLD  'CREATED:',POS=(21,5),ATTR=(PROT,NORM)
+         DFLD  CRTDATE,POS=(21,14),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'UPDATED:',POS=(21,30),ATTR=(PROT,NORM)
+         DFLD  UPDDATE,POS=(21,39),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE  PF9=DELETE',               X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+CUSADDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,13))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',     X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                        CUSTOMER ADD/EDIT',                  X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: ACTION & CUSTOMER ID ---
+         DFLD  'ACTION:',POS=(4,5),ATTR=(PROT,BRT)
+         DFLD  ACTEFLAG,POS=(4,13),LTH=1,ATTR=(PROT,NORM)
+         DFLD  'CUST ID:',POS=(4,50),ATTR=(PROT,BRT)
+         DFLD  CUSTID,POS=(4,59),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROWS 5-8: PERSONAL INFORMATION ---
+         DFLD  'LAST NAME:',POS=(5,5),ATTR=(PROT,BRT)
+         DFLD  LNAME,POS=(5,26),LTH=20,ATTR=(PROT,NORM)
+         DFLD  'MI:',POS=(5,50),ATTR=(PROT,BRT)
+         DFLD  MNAME,POS=(5,54),LTH=1,ATTR=(PROT,NORM)
+*
+         DFLD  'FIRST NAME:',POS=(6,5),ATTR=(PROT,BRT)
+         DFLD  FNAME,POS=(6,26),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'DATE OF BIRTH:',POS=(7,5),ATTR=(PROT,BRT)
+         DFLD  DOB,POS=(7,26),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'SSN LAST 4:',POS=(7,55),ATTR=(PROT,BRT)
+         DFLD  SSN4,POS=(7,67),LTH=4,ATTR=(PROT,NORM)
+*
+         DFLD  'DRIVER LIC#:',POS=(8,5),ATTR=(PROT,BRT)
+         DFLD  DLNUM,POS=(8,26),LTH=15,ATTR=(PROT,NORM)
+         DFLD  'DL STATE:',POS=(8,45),ATTR=(PROT,BRT)
+         DFLD  DLSTATE,POS=(8,55),LTH=2,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 10-12: ADDRESS ---
+         DFLD  'ADDRESS LINE 1:',POS=(10,5),ATTR=(PROT,BRT)
+         DFLD  ADDR1,POS=(10,26),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'ADDRESS LINE 2:',POS=(11,5),ATTR=(PROT,BRT)
+         DFLD  ADDR2,POS=(11,26),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  'CITY:',POS=(12,5),ATTR=(PROT,BRT)
+         DFLD  CITY,POS=(12,26),LTH=20,ATTR=(PROT,NORM)
+         DFLD  'ST:',POS=(12,50),ATTR=(PROT,BRT)
+         DFLD  STATE,POS=(12,54),LTH=2,ATTR=(PROT,NORM)
+         DFLD  'ZIP:',POS=(12,60),ATTR=(PROT,BRT)
+         DFLD  ZIPCODE,POS=(12,65),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(13,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 14-15: CONTACT ---
+         DFLD  'HOME PHONE:',POS=(14,5),ATTR=(PROT,BRT)
+         DFLD  HMPHONE,POS=(14,26),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'CELL:',POS=(14,42),ATTR=(PROT,BRT)
+         DFLD  CLPHONE,POS=(14,48),LTH=12,ATTR=(PROT,NORM)
+*
+         DFLD  'EMAIL:',POS=(15,5),ATTR=(PROT,BRT)
+         DFLD  EMAIL,POS=(15,26),LTH=30,ATTR=(PROT,NORM)
+*
+         DFLD  ' ',POS=(16,1),ATTR=(PROT,NORM)
+*
+* --- ROWS 17-19: EMPLOYMENT & CLASSIFICATION ---
+         DFLD  'EMPLOYER:',POS=(17,5),ATTR=(PROT,BRT)
+         DFLD  EMPLOYR,POS=(17,26),LTH=25,ATTR=(PROT,NORM)
+         DFLD  'INCOME:',POS=(17,55),ATTR=(PROT,BRT)
+         DFLD  INCOME,POS=(17,63),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'CUSTOMER TYPE:',POS=(18,5),ATTR=(PROT,BRT)
+         DFLD  CUSTYPE,POS=(18,26),LTH=1,ATTR=(PROT,NORM)
+         DFLD  CUSTDSC,POS=(18,29),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'SOURCE CODE:',POS=(19,5),ATTR=(PROT,BRT)
+         DFLD  SRCCODE,POS=(19,26),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'SALES PERSON:',POS=(19,35),ATTR=(PROT,BRT)
+         DFLD  ASGNSLP,POS=(19,49),LTH=8,ATTR=(PROT,NORM)
+         DFLD  SLPNAME,POS=(19,59),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 20-21: AUDIT ---
+         DFLD  ' ',POS=(20,1),ATTR=(PROT,NORM)
+         DFLD  'CREATED:',POS=(21,5),ATTR=(PROT,NORM)
+         DFLD  CRTDATE,POS=(21,14),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'UPDATED:',POS=(21,30),ATTR=(PROT,NORM)
+         DFLD  UPDDATE,POS=(21,39),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD  PF6=UPDATE  PF9=DELETE',               X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

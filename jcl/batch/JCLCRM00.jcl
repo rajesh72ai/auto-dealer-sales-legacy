@@ -1,0 +1,132 @@
+//*********************************************************************
+//* JCL:      JCLCRM00
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  CRM FEED EXTRACT
+//*           1. EXECUTE BATCRM00 - EXTRACT CUSTOMER, LEAD, AND
+//*              DEAL DATA FOR CRM SYSTEM SYNCHRONIZATION
+//*           2. SORT WITH DEDUP TO ELIMINATE DUPLICATE CUSTOMERS
+//*           3. GENERATE CONTROL FILE AND FTP TO CRM
+//* SCHEDULE: DAILY 02:00 CST
+//* ON ERROR: NOTIFY CRM INTEGRATION TEAM
+//*********************************************************************
+//AUTOSLCR JOB (ACCT),'AUTOSALES-CRM',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID
+//*
+//JOBLIB   DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - EXECUTE CRM EXTRACT (IMS BMP)
+//*-------------------------------------------------------------------
+//CRMEXT   EXEC IMSBATCH,MBR=BATCRM00,
+//         PSB=PSBCUS01,
+//         IMSID=IMSA,
+//         PRTY=(7,13,2)
+//STEPLIB  DD DSN=AUTOSALE.PROD.LOADLIB,DISP=SHR
+//         DD DSN=DSNLOAD,DISP=SHR
+//         DD DSN=IMS.RESLIB,DISP=SHR
+//DFSRESLB DD DSN=IMS.RESLIB,DISP=SHR
+//IMS      DD DSN=IMS.PSBLIB,DISP=SHR
+//         DD DSN=IMS.DBDLIB,DISP=SHR
+//PROCLIB  DD DSN=IMS.PROCLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//CUSTRAW  DD DSN=AUTOSALE.WORK.CRM.CUSTOMER,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(40,10),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//LEADRAW  DD DSN=AUTOSALE.WORK.CRM.LEADS,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(20,5),RLSE),
+//         DCB=(RECFM=FB,LRECL=350,BLKSIZE=0)
+//CTLCARD  DD *
+  EXTRACT-DATE=&LYYMMDD
+  EXTRACT-TYPE=DELTA
+  INCLUDE-LEADS=Y
+  INCLUDE-DEALS=Y
+  LEAD-DAYS=30
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - DEDUP CUSTOMER EXTRACT ON CUSTOMER_ID
+//*-------------------------------------------------------------------
+//DEDUP    EXEC PGM=ICETOOL,COND=(4,LT,CRMEXT)
+//TOOLMSG  DD SYSOUT=*
+//DFSMSG   DD SYSOUT=*
+//INCUST   DD DSN=AUTOSALE.WORK.CRM.CUSTOMER,DISP=SHR
+//OUTCUST  DD DSN=AUTOSALE.WORK.CRM.CUST.DEDUP,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(40,10),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//OUTDUP   DD DSN=AUTOSALE.WORK.CRM.CUST.DUPS,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//OUTRPT   DD SYSOUT=*
+//TOOLIN   DD *
+  SORT FROM(INCUST) TO(OUTCUST) USING(DDUP)
+  COUNT FROM(INCUST) WRITE(OUTRPT) TEXT('INPUT  CUSTOMERS: ')
+  COUNT FROM(OUTCUST) WRITE(OUTRPT) TEXT('UNIQUE CUSTOMERS: ')
+  COUNT FROM(OUTDUP) WRITE(OUTRPT) TEXT('DUPLICATE RECORDS: ')
+/*
+//DDUPCNTL DD *
+  SORT FIELDS=(1,10,CH,A)
+  SUM FIELDS=NONE
+  OUTFIL FNAMES=OUTCUST
+  SAVE
+  OUTFIL FNAMES=OUTDUP,SAVE
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP030 - SORT LEADS BY STATUS AND DATE
+//*-------------------------------------------------------------------
+//SORTLEAD EXEC PGM=SORT,COND=(4,LT,CRMEXT)
+//SYSOUT   DD SYSOUT=*
+//SORTIN   DD DSN=AUTOSALE.WORK.CRM.LEADS,DISP=SHR
+//SORTOUT  DD DSN=AUTOSALE.WORK.CRM.LEADS.SORTED,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(20,5),RLSE),
+//         DCB=(RECFM=FB,LRECL=350,BLKSIZE=0)
+//SYSIN    DD *
+  SORT FIELDS=(11,2,CH,A,13,10,CH,D)
+  INCLUDE COND=(11,2,CH,NE,C'CL')
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP040 - FTP TO CRM SYSTEM
+//*-------------------------------------------------------------------
+//FTP      EXEC PGM=FTP,PARM='(EXIT',COND=(4,LT,DEDUP)
+//SYSPRINT DD SYSOUT=*
+//OUTPUT   DD SYSOUT=*
+//INPUT    DD *
+  CRMSYSTEM.CORP.COM 21
+  AUTOSALES_CRM
+  XXXXXXXX
+  ASCII
+  CD /inbound/autosales
+  PUT 'AUTOSALE.WORK.CRM.CUST.DEDUP' customers.dat
+  PUT 'AUTOSALE.WORK.CRM.LEADS.SORTED' leads.dat
+  QUIT
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP050 - CLEANUP WORK DATASETS
+//*-------------------------------------------------------------------
+//CLEANUP  EXEC PGM=IEFBR14,COND=(4,LT,FTP)
+//DEL1     DD DSN=AUTOSALE.WORK.CRM.CUSTOMER,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL2     DD DSN=AUTOSALE.WORK.CRM.LEADS,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL3     DD DSN=AUTOSALE.WORK.CRM.CUST.DEDUP,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL4     DD DSN=AUTOSALE.WORK.CRM.CUST.DUPS,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL5     DD DSN=AUTOSALE.WORK.CRM.LEADS.SORTED,
+//         DISP=(OLD,DELETE,DELETE)
+//

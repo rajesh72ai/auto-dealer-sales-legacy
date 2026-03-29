@@ -1,0 +1,218 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: TRADE-IN EVALUATION                               *
+*  TRANSACTION: AUTOSTRD                                         *
+*  DESCRIPTION: Trade-in vehicle appraisal and valuation         *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+SALTDI   MID
+         SEG
+         MFLD  'AUTOSTRD',LTH=8
+         MFLD  DEALNUM,LTH=8
+         MFLD  TRDVIN,LTH=17
+         MFLD  TRDYR,LTH=4
+         MFLD  TRDMAK,LTH=12
+         MFLD  TRDMOD,LTH=12
+         MFLD  TRDCLR,LTH=10
+         MFLD  TRDOMT,LTH=7
+         MFLD  TRDCND,LTH=1
+         MFLD  ACVAMT,LTH=10
+         MFLD  TRDALL,LTH=10
+         MFLD  OVRALL,LTH=10
+         MFLD  PAYAMT,LTH=10
+         MFLD  PAYBNK,LTH=20
+         MFLD  PAYACT,LTH=15
+         MFLD  APPRBY,LTH=20
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+SALTDO   MOD
+         SEG
+         MFLD  (DEALNUM,LTH=8)
+         MFLD  (CSNAME,LTH=25)
+         MFLD  (TRDVIN,LTH=17)
+         MFLD  (TRDYR,LTH=4)
+         MFLD  (TRDMAK,LTH=12)
+         MFLD  (TRDMOD,LTH=12)
+         MFLD  (TRDCLR,LTH=10)
+         MFLD  (TRDOMT,LTH=7)
+         MFLD  (TRDCND,LTH=1)
+         MFLD  (ACVAMT,LTH=10)
+         MFLD  (TRDALL,LTH=10)
+         MFLD  (OVRALL,LTH=10)
+         MFLD  (PAYAMT,LTH=10)
+         MFLD  (PAYBNK,LTH=20)
+         MFLD  (PAYACT,LTH=15)
+         MFLD  (APPRBY,LTH=20)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+SALTDDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((6,15))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                       TRADE-IN EVALUATION',                   X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL INFO ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'CUSTOMER:',POS=(4,20),ATTR=(PROT,BRT)
+         DFLD  CSNAME,POS=(4,30),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 5: SEPARATOR ---
+         DFLD  '--- TRADE-IN VEHICLE ---',POS=(5,1),ATTR=(PROT,BRT)
+*
+* --- ROW 6-8: TRADE VEHICLE ---
+         DFLD  'TRADE VIN:',POS=(6,3),ATTR=(PROT,NORM)
+         DFLD  TRDVIN,POS=(6,15),LTH=17,ATTR=(UNPROT,ALPHA)
+         DFLD  'YEAR:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  TRDYR,POS=(7,9),LTH=4,ATTR=(UNPROT,NUM)
+         DFLD  'MAKE:',POS=(7,15),ATTR=(PROT,NORM)
+         DFLD  TRDMAK,POS=(7,21),LTH=12,ATTR=(UNPROT,ALPHA)
+         DFLD  'MODEL:',POS=(7,35),ATTR=(PROT,NORM)
+         DFLD  TRDMOD,POS=(7,42),LTH=12,ATTR=(UNPROT,ALPHA)
+*
+         DFLD  'COLOR:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  TRDCLR,POS=(8,10),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  'ODOMETER:',POS=(8,22),ATTR=(PROT,NORM)
+         DFLD  TRDOMT,POS=(8,32),LTH=7,ATTR=(UNPROT,NUM)
+*
+* --- ROW 9: SEPARATOR ---
+         DFLD  '--- APPRAISAL ---',POS=(9,1),ATTR=(PROT,BRT)
+*
+* --- ROW 10-12: CONDITION/VALUE ---
+         DFLD  'CONDITION (E/G/F/P):',POS=(10,3),ATTR=(PROT,NORM)
+         DFLD  TRDCND,POS=(10,24),LTH=1,ATTR=(UNPROT,ALPHA)
+         DFLD  'ACV AMOUNT:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  ACVAMT,POS=(11,24),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'ALLOWANCE:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  TRDALL,POS=(12,24),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'OVER-ALLOWANCE:',POS=(13,3),ATTR=(PROT,NORM)
+         DFLD  OVRALL,POS=(13,24),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 14: SEPARATOR ---
+         DFLD  '--- PAYOFF INFORMATION ---',POS=(14,1),ATTR=(PROT,BRT)
+*
+* --- ROW 15-16: PAYOFF ---
+         DFLD  'PAYOFF AMOUNT:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  PAYAMT,POS=(15,24),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'PAYOFF BANK:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  PAYBNK,POS=(16,24),LTH=20,ATTR=(UNPROT,ALPHA)
+         DFLD  'ACCOUNT#:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  PAYACT,POS=(17,24),LTH=15,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 18-19: APPRAISED BY ---
+         DFLD  ' ',POS=(18,1),ATTR=(PROT,NORM)
+         DFLD  'APPRAISED BY:',POS=(19,3),ATTR=(PROT,NORM)
+         DFLD  APPRBY,POS=(19,17),LTH=20,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD TRADE  PF6=UPDATE',POS=(23,1),      X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+SALTDDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((6,15))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                       TRADE-IN EVALUATION',                   X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL INFO ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'CUSTOMER:',POS=(4,20),ATTR=(PROT,BRT)
+         DFLD  CSNAME,POS=(4,30),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 5: SEPARATOR ---
+         DFLD  '--- TRADE-IN VEHICLE ---',POS=(5,1),ATTR=(PROT,BRT)
+*
+* --- ROW 6-8: TRADE VEHICLE ---
+         DFLD  'TRADE VIN:',POS=(6,3),ATTR=(PROT,NORM)
+         DFLD  TRDVIN,POS=(6,15),LTH=17,ATTR=(PROT,NORM)
+         DFLD  'YEAR:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  TRDYR,POS=(7,9),LTH=4,ATTR=(PROT,NORM)
+         DFLD  'MAKE:',POS=(7,15),ATTR=(PROT,NORM)
+         DFLD  TRDMAK,POS=(7,21),LTH=12,ATTR=(PROT,NORM)
+         DFLD  'MODEL:',POS=(7,35),ATTR=(PROT,NORM)
+         DFLD  TRDMOD,POS=(7,42),LTH=12,ATTR=(PROT,NORM)
+*
+         DFLD  'COLOR:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  TRDCLR,POS=(8,10),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'ODOMETER:',POS=(8,22),ATTR=(PROT,NORM)
+         DFLD  TRDOMT,POS=(8,32),LTH=7,ATTR=(PROT,NORM)
+*
+* --- ROW 9: SEPARATOR ---
+         DFLD  '--- APPRAISAL ---',POS=(9,1),ATTR=(PROT,BRT)
+*
+* --- ROW 10-13: CONDITION/VALUE ---
+         DFLD  'CONDITION (E/G/F/P):',POS=(10,3),ATTR=(PROT,NORM)
+         DFLD  TRDCND,POS=(10,24),LTH=1,ATTR=(PROT,NORM)
+         DFLD  'ACV AMOUNT:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  ACVAMT,POS=(11,24),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'ALLOWANCE:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  TRDALL,POS=(12,24),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'OVER-ALLOWANCE:',POS=(13,3),ATTR=(PROT,NORM)
+         DFLD  OVRALL,POS=(13,24),LTH=10,ATTR=(PROT,BRT)
+*
+* --- ROW 14: SEPARATOR ---
+         DFLD  '--- PAYOFF INFORMATION ---',POS=(14,1),ATTR=(PROT,BRT)
+*
+* --- ROW 15-17: PAYOFF ---
+         DFLD  'PAYOFF AMOUNT:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  PAYAMT,POS=(15,24),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'PAYOFF BANK:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  PAYBNK,POS=(16,24),LTH=20,ATTR=(PROT,NORM)
+         DFLD  'ACCOUNT#:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  PAYACT,POS=(17,24),LTH=15,ATTR=(PROT,NORM)
+*
+* --- ROW 18-19: APPRAISED BY ---
+         DFLD  ' ',POS=(18,1),ATTR=(PROT,NORM)
+         DFLD  'APPRAISED BY:',POS=(19,3),ATTR=(PROT,NORM)
+         DFLD  APPRBY,POS=(19,17),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ADD TRADE  PF6=UPDATE',POS=(23,1),      X
+               ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

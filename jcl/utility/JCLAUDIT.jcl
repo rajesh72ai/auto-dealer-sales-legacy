@@ -1,0 +1,146 @@
+//*********************************************************************
+//* JCL:      JCLAUDIT
+//* SYSTEM:   AUTOSALES - AUTOMOTIVE DEALER SALES & REPORTING
+//* PURPOSE:  AUDIT LOG EXTRACT AND ARCHIVE
+//*           1. EXTRACT AUDIT_LOG RECORDS OLDER THAN RETENTION
+//*           2. SORT BY DATE/USER/ACTION FOR COMPLIANCE REVIEW
+//*           3. ARCHIVE TO TAPE AND PURGE FROM DB2
+//* SCHEDULE: QUARTERLY (WITH JCLPUR00)
+//* ON ERROR: CONTACT DBA AND COMPLIANCE OFFICER
+//*********************************************************************
+//AUTOSLUA JOB (ACCT),'AUTOSALES-AUDIT',CLASS=A,MSGCLASS=H,
+//          MSGLEVEL=(1,1),NOTIFY=&SYSUID,
+//          REGION=0M,TIME=60
+//*
+//JOBLIB   DD DSN=DSNLOAD,DISP=SHR
+//*
+//*-------------------------------------------------------------------
+//* STEP010 - UNLOAD AUDIT RECORDS FOR ARCHIVAL
+//*-------------------------------------------------------------------
+//EXTAUDIT EXEC PGM=IKJEFT01,DYNAMNBR=20
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAUL) PLAN(DSNTIAUL) -
+      LIB('DSNLOAD')
+  END
+//SYSREC00 DD DSN=AUTOSALE.WORK.AUDIT.EXTRACT,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(200,50),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//SYSPUNCH DD DSN=AUTOSALE.WORK.AUDIT.SYSPUNCH,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(TRK,(1,1),RLSE),
+//         DCB=(RECFM=FB,LRECL=80,BLKSIZE=0)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  SELECT *
+  FROM AUTOSALE.AUDIT_LOG
+  WHERE LOG_TIMESTAMP < CURRENT TIMESTAMP - 1 YEAR
+  ORDER BY LOG_TIMESTAMP;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP020 - SORT AUDIT EXTRACT BY USER AND ACTION
+//*-------------------------------------------------------------------
+//SORTAUD  EXEC PGM=ICETOOL,COND=(4,LT,EXTAUDIT)
+//TOOLMSG  DD SYSOUT=*
+//DFSMSG   DD SYSOUT=*
+//INAUD    DD DSN=AUTOSALE.WORK.AUDIT.EXTRACT,DISP=SHR
+//OUTAUD   DD DSN=AUTOSALE.WORK.AUDIT.SORTED,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(200,50),RLSE),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=0)
+//OUTSUM   DD DSN=AUTOSALE.WORK.AUDIT.SUMMARY,
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=SYSDA,
+//         SPACE=(CYL,(5,2),RLSE),
+//         DCB=(RECFM=FB,LRECL=120,BLKSIZE=0)
+//OUTRPT   DD SYSOUT=*
+//TOOLIN   DD *
+  SORT FROM(INAUD) TO(OUTAUD) USING(ASRT)
+  DISPLAY FROM(OUTAUD) LIST(OUTRPT) -
+    TITLE('AUDIT LOG ARCHIVE SUMMARY') -
+    HEADER('USER-ID') ON(1,8,CH) -
+    HEADER('ACTION') ON(9,8,CH) -
+    HEADER('TABLE') ON(17,20,CH) -
+    HEADER('COUNT') ON(VALCNT) -
+    BLANK -
+    BTITLE('TOTAL RECORDS ARCHIVED') -
+    TOTAL('TOTAL') ON(VALCNT)
+/*
+//ASRTCNTL DD *
+  SORT FIELDS=(1,8,CH,A,9,8,CH,A,37,26,CH,A)
+  OUTFIL FNAMES=OUTAUD
+  OUTFIL FNAMES=OUTSUM,
+    OUTREC=(1,8,C'|',9,8,C'|',17,20,C'|',37,26)
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP030 - ARCHIVE TO TAPE
+//*-------------------------------------------------------------------
+//ARCHIVE  EXEC PGM=IEBGENER,COND=(4,LT,SORTAUD)
+//SYSUT1   DD DSN=AUTOSALE.WORK.AUDIT.SORTED,DISP=SHR
+//SYSUT2   DD DSN=AUTOSALE.PROD.ARCHIVE.AUDIT(&LYYMMDD),
+//         DISP=(NEW,CATLG,DELETE),
+//         UNIT=TAPE,
+//         LABEL=(1,SL),
+//         DCB=(RECFM=FB,LRECL=500,BLKSIZE=32760)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//*
+//*-------------------------------------------------------------------
+//* STEP040 - PURGE ARCHIVED RECORDS FROM DB2
+//*-------------------------------------------------------------------
+//PURGE    EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,ARCHIVE)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  DELETE FROM AUTOSALE.AUDIT_LOG
+  WHERE LOG_TIMESTAMP < CURRENT TIMESTAMP - 1 YEAR;
+  COMMIT;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP050 - POST-PURGE RECORD COUNT VERIFICATION
+//*-------------------------------------------------------------------
+//VFYCOUNT EXEC PGM=IKJEFT01,DYNAMNBR=20,
+//         COND=(4,LT,PURGE)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DBAG)
+  RUN PROGRAM(DSNTIAD) PLAN(DSNTIAD) -
+      LIB('DSNLOAD')
+  END
+//SYSIN    DD *
+  SELECT 'REMAINING' AS STATUS, COUNT(*) AS CNT
+  FROM AUTOSALE.AUDIT_LOG
+  UNION ALL
+  SELECT 'OLDEST-REC',
+         YEAR(MIN(LOG_TIMESTAMP)) * 10000 +
+         MONTH(MIN(LOG_TIMESTAMP)) * 100 +
+         DAY(MIN(LOG_TIMESTAMP))
+  FROM AUTOSALE.AUDIT_LOG;
+/*
+//*
+//*-------------------------------------------------------------------
+//* STEP060 - CLEANUP WORK DATASETS
+//*-------------------------------------------------------------------
+//CLEANUP  EXEC PGM=IEFBR14,COND=(4,LT,PURGE)
+//DEL1     DD DSN=AUTOSALE.WORK.AUDIT.EXTRACT,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL2     DD DSN=AUTOSALE.WORK.AUDIT.SORTED,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL3     DD DSN=AUTOSALE.WORK.AUDIT.SUMMARY,
+//         DISP=(OLD,DELETE,DELETE)
+//DEL4     DD DSN=AUTOSALE.WORK.AUDIT.SYSPUNCH,
+//         DISP=(OLD,DELETE,DELETE)
+//

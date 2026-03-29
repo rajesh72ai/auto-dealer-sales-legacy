@@ -1,0 +1,208 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: PRICE NEGOTIATION                                 *
+*  TRANSACTION: AUTOSNGN                                         *
+*  DESCRIPTION: Price negotiation desk with profit analysis      *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+SALNGI   MID
+         SEG
+         MFLD  'AUTOSNGN',LTH=8
+         MFLD  DEALNUM,LTH=8
+         MFLD  CUROFE,LTH=10
+         MFLD  CTROFR,LTH=10
+         MFLD  DSCAMT,LTH=10
+         MFLD  DSCPCT,LTH=5
+         MFLD  DSKNOT,LTH=160
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+SALNGO   MOD
+         SEG
+         MFLD  (DEALNUM,LTH=8)
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYMM,LTH=20)
+         MFLD  (CSNAME,LTH=25)
+         MFLD  (MSRP,LTH=10)
+         MFLD  (INVOIC,LTH=10)
+         MFLD  (HLDBCK,LTH=10)
+         MFLD  (CUROFE,LTH=10)
+         MFLD  (CTROFR,LTH=10)
+         MFLD  (DSCAMT,LTH=10)
+         MFLD  (DSCPCT,LTH=5)
+         MFLD  (GRSPRF,LTH=10)
+         MFLD  (MGNPCT,LTH=5)
+         MFLD  (DSKNOT,LTH=160)
+         MFLD  (NGSTAT,LTH=10)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+SALNGDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((10,22))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                        PRICE NEGOTIATION',                    X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL INFO ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(4,20),ATTR=(PROT,BRT)
+         DFLD  NGSTAT,POS=(4,28),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 5: VEHICLE ---
+         DFLD  'VEHICLE:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(5,10),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(5,28),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 6: CUSTOMER ---
+         DFLD  'CUSTOMER:',POS=(6,1),ATTR=(PROT,BRT)
+         DFLD  CSNAME,POS=(6,11),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  '--- PRICING ANALYSIS ---',POS=(7,1),ATTR=(PROT,BRT)
+*
+* --- ROW 8-9: BASE PRICING ---
+         DFLD  'MSRP:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  MSRP,POS=(8,22),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'INVOICE:',POS=(9,3),ATTR=(PROT,NORM)
+         DFLD  INVOIC,POS=(9,22),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'HOLDBACK:',POS=(8,42),ATTR=(PROT,NORM)
+         DFLD  HLDBCK,POS=(8,55),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 10-13: NEGOTIATION FIELDS ---
+         DFLD  '--- NEGOTIATION ---',POS=(10,1),ATTR=(PROT,BRT)
+         DFLD  'CURRENT OFFER:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  CUROFE,POS=(11,22),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'COUNTER OFFER:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  CTROFR,POS=(12,22),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'DISCOUNT AMT:',POS=(13,3),ATTR=(PROT,NORM)
+         DFLD  DSCAMT,POS=(13,22),LTH=10,ATTR=(UNPROT,NUM)
+         DFLD  'DISCOUNT PCT:',POS=(13,42),ATTR=(PROT,NORM)
+         DFLD  DSCPCT,POS=(13,57),LTH=5,ATTR=(UNPROT,NUM)
+*
+* --- ROW 14-15: PROFIT ---
+         DFLD  '--- PROFIT ANALYSIS ---',POS=(14,1),ATTR=(PROT,BRT)
+         DFLD  'GROSS PROFIT:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  GRSPRF,POS=(15,22),LTH=10,ATTR=(PROT,BRT)
+         DFLD  'MARGIN PCT:',POS=(15,42),ATTR=(PROT,NORM)
+         DFLD  MGNPCT,POS=(15,57),LTH=5,ATTR=(PROT,BRT)
+*
+* --- ROW 16: SEPARATOR ---
+         DFLD  '--- MANAGER DESK NOTES ---',POS=(16,1),ATTR=(PROT,BRT)
+*
+* --- ROWS 17-20: NOTES AREA ---
+         DFLD  DSKNOT,POS=(17,1),LTH=40,ATTR=(UNPROT,ALPHA)
+         DFLD  DSKNT2,POS=(18,1),LTH=40,ATTR=(UNPROT,ALPHA)
+         DFLD  DSKNT3,POS=(19,1),LTH=40,ATTR=(UNPROT,ALPHA)
+         DFLD  DSKNT4,POS=(20,1),LTH=40,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ACCEPT  PF6=COUNTER  PF9=SEND TO MGR',       X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+SALNGDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((11,22))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                        PRICE NEGOTIATION',                    X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: DEAL INFO ---
+         DFLD  'DEAL#:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,8),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'STATUS:',POS=(4,20),ATTR=(PROT,BRT)
+         DFLD  NGSTAT,POS=(4,28),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 5: VEHICLE ---
+         DFLD  'VEHICLE:',POS=(5,1),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(5,10),LTH=17,ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(5,28),LTH=20,ATTR=(PROT,NORM)
+*
+* --- ROW 6: CUSTOMER ---
+         DFLD  'CUSTOMER:',POS=(6,1),ATTR=(PROT,BRT)
+         DFLD  CSNAME,POS=(6,11),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 7: SEPARATOR ---
+         DFLD  '--- PRICING ANALYSIS ---',POS=(7,1),ATTR=(PROT,BRT)
+*
+* --- ROW 8-9: BASE PRICING ---
+         DFLD  'MSRP:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  MSRP,POS=(8,22),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'INVOICE:',POS=(9,3),ATTR=(PROT,NORM)
+         DFLD  INVOIC,POS=(9,22),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'HOLDBACK:',POS=(8,42),ATTR=(PROT,NORM)
+         DFLD  HLDBCK,POS=(8,55),LTH=10,ATTR=(PROT,NORM)
+*
+* --- ROW 10-13: NEGOTIATION FIELDS ---
+         DFLD  '--- NEGOTIATION ---',POS=(10,1),ATTR=(PROT,BRT)
+         DFLD  'CURRENT OFFER:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  CUROFE,POS=(11,22),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'COUNTER OFFER:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  CTROFR,POS=(12,22),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DISCOUNT AMT:',POS=(13,3),ATTR=(PROT,NORM)
+         DFLD  DSCAMT,POS=(13,22),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DISCOUNT PCT:',POS=(13,42),ATTR=(PROT,NORM)
+         DFLD  DSCPCT,POS=(13,57),LTH=5,ATTR=(PROT,NORM)
+*
+* --- ROW 14-15: PROFIT ---
+         DFLD  '--- PROFIT ANALYSIS ---',POS=(14,1),ATTR=(PROT,BRT)
+         DFLD  'GROSS PROFIT:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  GRSPRF,POS=(15,22),LTH=10,ATTR=(PROT,BRT)
+         DFLD  'MARGIN PCT:',POS=(15,42),ATTR=(PROT,NORM)
+         DFLD  MGNPCT,POS=(15,57),LTH=5,ATTR=(PROT,BRT)
+*
+* --- ROW 16: SEPARATOR ---
+         DFLD  '--- MANAGER DESK NOTES ---',POS=(16,1),ATTR=(PROT,BRT)
+*
+* --- ROWS 17-20: NOTES AREA ---
+         DFLD  DSKNOT,POS=(17,1),LTH=40,ATTR=(PROT,NORM)
+         DFLD  DSKNT2,POS=(18,1),LTH=40,ATTR=(PROT,NORM)
+         DFLD  DSKNT3,POS=(19,1),LTH=40,ATTR=(PROT,NORM)
+         DFLD  DSKNT4,POS=(20,1),LTH=40,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN  PF5=ACCEPT  PF6=COUNTER  PF9=SEND TO MGR',       X
+               POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

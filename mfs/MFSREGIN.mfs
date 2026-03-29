@@ -1,0 +1,194 @@
+*---------------------------------------------------------------*
+*  MFS SCREEN: REGISTRATION INQUIRY                              *
+*  TRANSACTION: AUTOREQI                                         *
+*  DESCRIPTION: Vehicle registration and title inquiry           *
+*---------------------------------------------------------------*
+         PRINT NOGEN
+*
+* MESSAGE INPUT DESCRIPTOR
+*
+REGINI   MID
+         SEG
+         MFLD  'AUTOREQI',LTH=8
+         MFLD  REGID,LTH=10
+         MFLD  DEALNUM,LTH=8
+         MFLD  VINNUM,LTH=17
+         MSGEND
+*
+* MESSAGE OUTPUT DESCRIPTOR
+*
+REGINO   MOD
+         SEG
+         MFLD  (REGID,LTH=10)
+         MFLD  (DEALNUM,LTH=8)
+         MFLD  (VINNUM,LTH=17)
+         MFLD  (VHYMM,LTH=20)
+         MFLD  (CSNAME,LTH=25)
+         MFLD  (RGSTAT,LTH=10)
+         MFLD  (RGSTTE,LTH=2)
+         MFLD  (RGTYPE,LTH=10)
+         MFLD  (PLATE,LTH=10)
+         MFLD  (TITLNO,LTH=15)
+         MFLD  (LNHOLD,LTH=25)
+         MFLD  (RGSTTS,LTH=10)
+         MFLD  (SUBDAT,LTH=10)
+         MFLD  (ISSDAT,LTH=10)
+         MFLD  (FEEAMT,LTH=8)
+         MFLD  (MSGTEXT,LTH=79)
+         MSGEND
+*
+* DEVICE INPUT FORMAT
+*
+REGINDIF DIF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,11))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      REGISTRATION INQUIRY',                   X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4-5: SEARCH FIELDS ---
+         DFLD  'REG ID:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  REGID,POS=(4,11),LTH=10,ATTR=(UNPROT,ALPHA)
+         DFLD  'DEAL#:',POS=(4,25),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,32),LTH=8,ATTR=(UNPROT,ALPHA)
+         DFLD  'VIN:',POS=(4,44),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(4,49),LTH=17,ATTR=(UNPROT,ALPHA)
+*
+* --- ROW 6: SEPARATOR ---
+         DFLD  '--- REGISTRATION DETAIL ---',POS=(6,1),ATTR=(PROT,BRT)
+*
+* --- ROW 7-8: VEHICLE / CUSTOMER ---
+         DFLD  'VEHICLE:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(7,12),LTH=20,ATTR=(PROT,NORM)
+         DFLD  'CUSTOMER:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(8,13),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 9: SEPARATOR ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+*
+* --- ROW 10-14: REGISTRATION FIELDS ---
+         DFLD  'REG STATE:',POS=(10,3),ATTR=(PROT,NORM)
+         DFLD  RGSTTE,POS=(10,18),LTH=2,ATTR=(PROT,NORM)
+         DFLD  'REG TYPE:',POS=(10,24),ATTR=(PROT,NORM)
+         DFLD  RGTYPE,POS=(10,34),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'PLATE#:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  PLATE,POS=(11,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TITLE#:',POS=(11,32),ATTR=(PROT,NORM)
+         DFLD  TITLNO,POS=(11,40),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'LIEN HOLDER:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  LNHOLD,POS=(12,16),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 13: SEPARATOR ---
+         DFLD  '--- STATUS ---',POS=(13,1),ATTR=(PROT,BRT)
+*
+         DFLD  'STATUS:',POS=(14,3),ATTR=(PROT,NORM)
+         DFLD  RGSTTS,POS=(14,11),LTH=10,ATTR=(PROT,BRT)
+*
+         DFLD  'SUBMISSION DATE:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  SUBDAT,POS=(15,20),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'ISSUED DATE:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  ISSDAT,POS=(16,16),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'FEES PAID:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  FEEAMT,POS=(17,14),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+*
+* DEVICE OUTPUT FORMAT
+*
+REGINDOF DOF   TYPE=3270-A2
+         DEV   TYPE=3270-A2,FEAT=IGNORE,DSCA=X'00A0'
+         DIV   TYPE=INOUT
+         DPAGE CURSOR=((4,11))
+*
+* --- ROW 1: SCREEN TITLE ---
+         DFLD  '            AUTOSALES - AUTOMOTIVE DEALER SALES SYSTEM',       X
+               POS=(1,1),ATTR=(PROT,BRT)
+*
+* --- ROW 2: SUBTITLE ---
+         DFLD  '                      REGISTRATION INQUIRY',                   X
+               POS=(2,1),ATTR=(PROT,BRT)
+*
+* --- ROW 3: SEPARATOR ---
+         DFLD  '----------',POS=(3,1),ATTR=(PROT,NORM),LTH=80
+*
+* --- ROW 4: SEARCH (DISPLAY) ---
+         DFLD  'REG ID:',POS=(4,1),ATTR=(PROT,BRT)
+         DFLD  REGID,POS=(4,11),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'DEAL#:',POS=(4,25),ATTR=(PROT,BRT)
+         DFLD  DEALNUM,POS=(4,32),LTH=8,ATTR=(PROT,NORM)
+         DFLD  'VIN:',POS=(4,44),ATTR=(PROT,BRT)
+         DFLD  VINNUM,POS=(4,49),LTH=17,ATTR=(PROT,NORM)
+*
+* --- ROW 6: SEPARATOR ---
+         DFLD  '--- REGISTRATION DETAIL ---',POS=(6,1),ATTR=(PROT,BRT)
+*
+* --- ROW 7-8: VEHICLE / CUSTOMER ---
+         DFLD  'VEHICLE:',POS=(7,3),ATTR=(PROT,NORM)
+         DFLD  VHYMM,POS=(7,12),LTH=20,ATTR=(PROT,NORM)
+         DFLD  'CUSTOMER:',POS=(8,3),ATTR=(PROT,NORM)
+         DFLD  CSNAME,POS=(8,13),LTH=25,ATTR=(PROT,NORM)
+*
+* --- ROW 9: SEPARATOR ---
+         DFLD  ' ',POS=(9,1),ATTR=(PROT,NORM)
+*
+* --- ROW 10-17: REGISTRATION FIELDS ---
+         DFLD  'REG STATE:',POS=(10,3),ATTR=(PROT,NORM)
+         DFLD  RGSTTE,POS=(10,18),LTH=2,ATTR=(PROT,NORM)
+         DFLD  'REG TYPE:',POS=(10,24),ATTR=(PROT,NORM)
+         DFLD  RGTYPE,POS=(10,34),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'PLATE#:',POS=(11,3),ATTR=(PROT,NORM)
+         DFLD  PLATE,POS=(11,18),LTH=10,ATTR=(PROT,NORM)
+         DFLD  'TITLE#:',POS=(11,32),ATTR=(PROT,NORM)
+         DFLD  TITLNO,POS=(11,40),LTH=15,ATTR=(PROT,NORM)
+*
+         DFLD  'LIEN HOLDER:',POS=(12,3),ATTR=(PROT,NORM)
+         DFLD  LNHOLD,POS=(12,16),LTH=25,ATTR=(PROT,NORM)
+*
+         DFLD  '--- STATUS ---',POS=(13,1),ATTR=(PROT,BRT)
+*
+         DFLD  'STATUS:',POS=(14,3),ATTR=(PROT,NORM)
+         DFLD  RGSTTS,POS=(14,11),LTH=10,ATTR=(PROT,BRT)
+*
+         DFLD  'SUBMISSION DATE:',POS=(15,3),ATTR=(PROT,NORM)
+         DFLD  SUBDAT,POS=(15,20),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'ISSUED DATE:',POS=(16,3),ATTR=(PROT,NORM)
+         DFLD  ISSDAT,POS=(16,16),LTH=10,ATTR=(PROT,NORM)
+*
+         DFLD  'FEES PAID:',POS=(17,3),ATTR=(PROT,NORM)
+         DFLD  FEEAMT,POS=(17,14),LTH=8,ATTR=(PROT,NORM)
+*
+* --- ROW 22: SEPARATOR ---
+         DFLD  ' ',POS=(22,1),ATTR=(PROT,NORM)
+*
+* --- ROW 23: PF KEY LEGEND ---
+         DFLD  'PF3=RETURN',POS=(23,1),ATTR=(PROT,BRT)
+*
+* --- ROW 24: MESSAGE LINE ---
+         DFLD  MSGTEXT,POS=(24,1),LTH=79,ATTR=(PROT,BRT)
+*
+         FMTEND
+         END

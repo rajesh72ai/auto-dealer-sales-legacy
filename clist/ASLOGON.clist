@@ -1,0 +1,199 @@
+PROC 0 ENV(PROD)
+/*********************************************************************/
+/* ASLOGON - AUTOSALES TSO Logon Procedure                           */
+/*                                                                   */
+/* Description: Allocates AUTOSALES datasets to standard DDNAMEs.    */
+/*              Sets up ISPF libraries (panels, messages, skeletons). */
+/*              Initializes environment variables. Calls ASMENU to   */
+/*              display main menu.                                    */
+/*                                                                   */
+/* Usage:       TSO %ASLOGON                                         */
+/*              TSO %ASLOGON ENV(DEV)                                */
+/*              TSO %ASLOGON ENV(QA)                                 */
+/*                                                                   */
+/* Author:      AUTOSALES Development Team                           */
+/* System:      AUTOSALES - IMS DC/COBOL/DB2 z/OS                   */
+/*********************************************************************/
+CONTROL NOFLUSH NOMSG
+ERROR DO
+  SET &ERRRC = &LASTCC
+  WRITE *** ASLOGON error at &SESSION. RC=&ERRRC
+  GOTO CLEANUP
+END
+
+WRITE
+WRITE ============================================================
+WRITE    AUTOSALES - Automotive Dealer Sales System
+WRITE    TSO Environment Setup
+WRITE ============================================================
+WRITE
+
+/*---------------------------------------------------------------*/
+/* Determine environment HLQ                                     */
+/*---------------------------------------------------------------*/
+SELECT (&ENV)
+  WHEN (DEV)  SET &HLQ = &STR(AUTODEV)
+  WHEN (QA)   SET &HLQ = &STR(AUTOQA)
+  WHEN (PROD) SET &HLQ = &STR(AUTOSALE)
+  OTHERWISE DO
+    WRITE *** Invalid environment: &ENV
+    WRITE *** Valid values: DEV, QA, PROD
+    EXIT CODE(8)
+  END
+END
+
+WRITE  Environment: &ENV (&HLQ)
+WRITE  User:        &SYSUID
+WRITE  Date:        &SYSDATE &SYSTIME
+WRITE
+
+/*---------------------------------------------------------------*/
+/* Allocate AUTOSALES application datasets                       */
+/*---------------------------------------------------------------*/
+SET &SESSION = &STR(ALLOC)
+WRITE  Allocating application datasets...
+
+/* Source libraries */
+ALLOC FI(ASCOBOL) DA('&HLQ..COBOL') SHR REUSE
+ALLOC FI(ASCOPY)  DA('&HLQ..COPYLIB') SHR REUSE
+ALLOC FI(ASJCL)   DA('&HLQ..JCL') SHR REUSE
+ALLOC FI(ASMFS)   DA('&HLQ..MFS') SHR REUSE
+ALLOC FI(ASDDL)   DA('&HLQ..DDL') SHR REUSE
+
+/* Executable libraries */
+ALLOC FI(ASLOAD)  DA('&HLQ..LOADLIB') SHR REUSE
+ALLOC FI(ASDBRM)  DA('&HLQ..DBRM') SHR REUSE
+
+/* REXX and CLIST libraries */
+ALLOC FI(ASREXX)  DA('&HLQ..REXX') SHR REUSE
+ALLOC FI(ASCLIST) DA('&HLQ..CLIST') SHR REUSE
+
+/* Report output library */
+ALLOC FI(ASRPT)   DA('&HLQ..REPORTS') SHR REUSE
+
+/* Listing library */
+ALLOC FI(ASLIST)  DA('&HLQ..LISTING') SHR REUSE
+
+WRITE  Application datasets allocated.
+
+/*---------------------------------------------------------------*/
+/* Add REXX and CLIST to search paths                            */
+/*---------------------------------------------------------------*/
+SET &SESSION = &STR(LIBDEF)
+WRITE  Setting up execution libraries...
+
+/* Add REXX library to SYSEXEC concatenation */
+ALLOC FI(SYSEXEC) DA('&HLQ..REXX' +
+                      'SYS1.SAXREXEC') SHR REUSE
+
+/* Add CLIST library to SYSPROC concatenation */
+ALLOC FI(SYSPROC) DA('&HLQ..CLIST' +
+                      'SYS1.SACBCNTL') SHR REUSE
+
+WRITE  Execution libraries added to search path.
+
+/*---------------------------------------------------------------*/
+/* Set up ISPF libraries (panels, messages, tables, skeletons)   */
+/*---------------------------------------------------------------*/
+SET &SESSION = &STR(ISPF)
+WRITE  Setting up ISPF libraries...
+
+/* Panel library */
+ISPEXEC LIBDEF ISPPLIB DATASET ID('&HLQ..PANELS') STACK
+IF &LASTCC > 0 THEN +
+  WRITE  Warning: Panel library not found - text menus will be used.
+
+/* Message library */
+ISPEXEC LIBDEF ISPMLIB DATASET ID('&HLQ..MSGS') STACK
+IF &LASTCC > 0 THEN +
+  WRITE  Warning: Message library not found.
+
+/* Skeleton library */
+ISPEXEC LIBDEF ISPSLIB DATASET ID('&HLQ..SKELS') STACK
+IF &LASTCC > 0 THEN +
+  WRITE  Warning: Skeleton library not found.
+
+/* Table library (input and output) */
+ISPEXEC LIBDEF ISPTLIB DATASET ID('&HLQ..TABLES') STACK
+ISPEXEC LIBDEF ISPTABL DATASET ID('&HLQ..TABLES') STACK
+
+/* Load library for ISPF applications */
+ISPEXEC LIBDEF ISPLLIB DATASET ID('&HLQ..LOADLIB') STACK
+
+WRITE  ISPF libraries configured.
+
+/*---------------------------------------------------------------*/
+/* Set AUTOSALES global profile variables                        */
+/*---------------------------------------------------------------*/
+SET &SESSION = &STR(PROFILE)
+WRITE  Initializing environment variables...
+
+/* Store environment info in ISPF shared pool */
+ISPEXEC VPUT (HLQ ENV) SHARED
+SET &ASVER = &STR(4.2.0)
+ISPEXEC VPUT (ASVER) SHARED
+
+/* DB2 subsystem name */
+SELECT (&ENV)
+  WHEN (DEV)  SET &DB2SSID = &STR(DB2D)
+  WHEN (QA)   SET &DB2SSID = &STR(DB2Q)
+  WHEN (PROD) SET &DB2SSID = &STR(DB2P)
+END
+ISPEXEC VPUT (DB2SSID) SHARED
+
+/* IMS system ID */
+SELECT (&ENV)
+  WHEN (DEV)  SET &IMSID = &STR(IMSD)
+  WHEN (QA)   SET &IMSID = &STR(IMSQ)
+  WHEN (PROD) SET &IMSID = &STR(IMSP)
+END
+ISPEXEC VPUT (IMSID) SHARED
+
+WRITE  Environment variables set.
+
+/*---------------------------------------------------------------*/
+/* Display startup summary                                       */
+/*---------------------------------------------------------------*/
+WRITE
+WRITE  AUTOSALES environment ready.
+WRITE  ----------------------------------------------------------
+WRITE  HLQ:        &HLQ
+WRITE  Version:    &ASVER
+WRITE  DB2 SSID:   &DB2SSID
+WRITE  IMS ID:     &IMSID
+WRITE  ----------------------------------------------------------
+WRITE
+
+/*---------------------------------------------------------------*/
+/* Launch main menu                                              */
+/*---------------------------------------------------------------*/
+SET &SESSION = &STR(MENU)
+WRITE  Launching AUTOSALES main menu...
+WRITE
+%ASMENU
+
+/*---------------------------------------------------------------*/
+/* Cleanup on exit                                               */
+/*---------------------------------------------------------------*/
+CLEANUP: +
+WRITE
+WRITE  Cleaning up AUTOSALES environment...
+
+/* Release ISPF library definitions */
+ISPEXEC LIBDEF ISPPLIB
+ISPEXEC LIBDEF ISPMLIB
+ISPEXEC LIBDEF ISPSLIB
+ISPEXEC LIBDEF ISPTLIB
+ISPEXEC LIBDEF ISPTABL
+ISPEXEC LIBDEF ISPLLIB
+
+/* Free allocated datasets */
+FREE FI(ASCOBOL ASCOPY ASJCL ASMFS ASDDL)
+FREE FI(ASLOAD ASDBRM)
+FREE FI(ASREXX ASCLIST)
+FREE FI(ASRPT ASLIST)
+
+WRITE  AUTOSALES session ended. Goodbye.
+WRITE
+
+EXIT CODE(0)
