@@ -1,0 +1,8 @@
+-- ==========================================================
+-- AUTOSALES - Database Sequences
+-- ==========================================================
+
+CREATE SEQUENCE fpl_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 20;
+CREATE SEQUENCE reg_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 20;
+CREATE SEQUENCE reg_track_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 20;
+CREATE SEQUENCE warr_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 20;

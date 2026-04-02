@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/autosales
+    username: autosales
+    password: autosales
+
+logging:
+  level:
+    com.autosales: INFO
+    org.hibernate.SQL: WARN

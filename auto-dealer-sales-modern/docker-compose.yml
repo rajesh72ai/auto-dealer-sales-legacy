@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: autosales-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: autosales
+      POSTGRES_USER: autosales
+      POSTGRES_PASSWORD: autosales
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autosales"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autosales-net
+
+  app:
+    build: .
+    container_name: autosales-app
+    ports:
+      - "8480:8480"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/autosales
+      SPRING_DATASOURCE_USERNAME: autosales
+      SPRING_DATASOURCE_PASSWORD: autosales
+      JWT_SECRET: autosales-docker-secret-key-must-be-at-least-256-bits-long-change-in-prod
+    networks:
+      - autosales-net
+
+  frontend:
+    build: ./frontend
+    container_name: autosales-ui
+    ports:
+      - "3004:3004"
+    depends_on:
+      - app
+    environment:
+      VITE_API_BASE: http://autosales-app:8480
+    networks:
+      - autosales-net
+
+volumes:
+  pgdata:
+
+networks:
+  autosales-net:
+    name: autosales-net
