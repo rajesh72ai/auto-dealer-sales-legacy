@@ -3,13 +3,13 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.sales.dto.TradeInRequest;
 import com.autosales.modules.sales.dto.TradeInResponse;
 import com.autosales.modules.sales.service.DealService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ import java.util.Set;
 public class AddTradeInHandler implements ActionHandler {
 
     private final DealService dealService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "add_trade_in"; }
     @Override public Tier tier()       { return Tier.A; }
@@ -71,11 +71,14 @@ public class AddTradeInHandler implements ActionHandler {
     private TradeInRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
         Map<String, Object> filtered = new java.util.HashMap<>(payload);
         filtered.remove("dealNumber");
-        TradeInRequest req = mapper.convertValue(filtered, TradeInRequest.class);
-        if (req.getAppraisedBy() == null || req.getAppraisedBy().isBlank()) {
-            req.setAppraisedBy(user.getUserId());
+        if (!filtered.containsKey("appraisedBy") || blank(filtered.get("appraisedBy"))) {
+            filtered.put("appraisedBy", user.getUserId());
         }
-        return req;
+        return payloadValidator.convertAndValidate(filtered, TradeInRequest.class);
+    }
+
+    private static boolean blank(Object o) {
+        return o == null || o.toString().isBlank();
     }
 
     private ImpactPreview buildPreview(String dealNumber, TradeInResponse t, TradeInRequest req) {

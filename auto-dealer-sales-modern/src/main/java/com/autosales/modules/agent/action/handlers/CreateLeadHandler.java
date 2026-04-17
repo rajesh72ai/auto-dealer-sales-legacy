@@ -3,17 +3,18 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.customer.dto.LeadRequest;
 import com.autosales.modules.customer.dto.LeadResponse;
 import com.autosales.modules.customer.service.CustomerLeadService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,7 +23,7 @@ import java.util.Set;
 public class CreateLeadHandler implements ActionHandler {
 
     private final CustomerLeadService leadService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "create_lead"; }
     @Override public Tier tier()       { return Tier.A; }
@@ -58,15 +59,13 @@ public class CreateLeadHandler implements ActionHandler {
     }
 
     private LeadRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
-        LeadRequest req = mapper.convertValue(payload, LeadRequest.class);
-        if (req.getDealerCode() == null || req.getDealerCode().isBlank()) {
-            req.setDealerCode(user.getDealerCode());
-        }
-        if (req.getAssignedSales() == null || req.getAssignedSales().isBlank()) {
-            req.setAssignedSales(user.getUserId());
-        }
-        return req;
+        Map<String, Object> filtered = new HashMap<>(payload);
+        if (blank(filtered.get("dealerCode")))    filtered.put("dealerCode", user.getDealerCode());
+        if (blank(filtered.get("assignedSales"))) filtered.put("assignedSales", user.getUserId());
+        return payloadValidator.convertAndValidate(filtered, LeadRequest.class);
     }
+
+    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
 
     private ImpactPreview buildPreview(LeadResponse lead, LeadRequest req) {
         ImpactPreview p = ImpactPreview.builder()

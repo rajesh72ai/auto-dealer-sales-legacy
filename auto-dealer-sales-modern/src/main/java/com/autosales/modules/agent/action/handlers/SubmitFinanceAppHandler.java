@@ -3,18 +3,19 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.finance.dto.FinanceAppRequest;
 import com.autosales.modules.finance.dto.FinanceAppResponse;
 import com.autosales.modules.finance.service.FinanceAppService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,7 +24,7 @@ import java.util.Set;
 public class SubmitFinanceAppHandler implements ActionHandler {
 
     private final FinanceAppService financeAppService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "submit_finance_app"; }
     @Override public Tier tier()       { return Tier.A; }
@@ -59,12 +60,12 @@ public class SubmitFinanceAppHandler implements ActionHandler {
     }
 
     private FinanceAppRequest toRequest(Map<String, Object> payload) {
-        FinanceAppRequest req = mapper.convertValue(payload, FinanceAppRequest.class);
-        if (req.getFinanceType() == null || req.getFinanceType().isBlank()) {
-            req.setFinanceType("L");
-        }
-        return req;
+        Map<String, Object> filtered = new HashMap<>(payload);
+        if (blank(filtered.get("financeType"))) filtered.put("financeType", "L");
+        return payloadValidator.convertAndValidate(filtered, FinanceAppRequest.class);
     }
+
+    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
 
     private ImpactPreview buildPreview(FinanceAppResponse app, FinanceAppRequest req) {
         ImpactPreview p = ImpactPreview.builder()

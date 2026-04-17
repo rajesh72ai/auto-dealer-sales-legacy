@@ -3,18 +3,19 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.sales.dto.CreateDealRequest;
 import com.autosales.modules.sales.dto.DealResponse;
 import com.autosales.modules.sales.service.DealService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,7 +24,7 @@ import java.util.Set;
 public class CreateDealHandler implements ActionHandler {
 
     private final DealService dealService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "create_deal"; }
     @Override public Tier tier()       { return Tier.A; }
@@ -59,18 +60,14 @@ public class CreateDealHandler implements ActionHandler {
     }
 
     private CreateDealRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
-        CreateDealRequest req = mapper.convertValue(payload, CreateDealRequest.class);
-        if (req.getDealerCode() == null || req.getDealerCode().isBlank()) {
-            req.setDealerCode(user.getDealerCode());
-        }
-        if (req.getSalespersonId() == null || req.getSalespersonId().isBlank()) {
-            req.setSalespersonId(user.getUserId());
-        }
-        if (req.getDealType() == null || req.getDealType().isBlank()) {
-            req.setDealType("R");
-        }
-        return req;
+        Map<String, Object> filtered = new HashMap<>(payload);
+        if (blank(filtered.get("dealerCode")))    filtered.put("dealerCode", user.getDealerCode());
+        if (blank(filtered.get("salespersonId"))) filtered.put("salespersonId", user.getUserId());
+        if (blank(filtered.get("dealType")))      filtered.put("dealType", "R");
+        return payloadValidator.convertAndValidate(filtered, CreateDealRequest.class);
     }
+
+    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
 
     private ImpactPreview buildPreview(DealResponse deal, CreateDealRequest req) {
         BigDecimal total = zeroIfNull(deal.getTotalPrice());

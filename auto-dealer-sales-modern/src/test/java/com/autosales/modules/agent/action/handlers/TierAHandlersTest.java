@@ -2,6 +2,7 @@ package com.autosales.modules.agent.action.handlers;
 
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.finance.dto.FinanceAppRequest;
 import com.autosales.modules.finance.dto.FinanceAppResponse;
@@ -12,6 +13,7 @@ import com.autosales.modules.sales.dto.TradeInRequest;
 import com.autosales.modules.sales.dto.TradeInResponse;
 import com.autosales.modules.sales.service.DealService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +37,9 @@ class TierAHandlersTest {
 
     @Mock private DealService dealService;
     @Mock private FinanceAppService financeAppService;
-    @Spy  private ObjectMapper mapper = new ObjectMapper();
+    @Spy  private PayloadValidator payloadValidator = new PayloadValidator(
+            new ObjectMapper(),
+            Validation.buildDefaultValidatorFactory().getValidator());
 
     @InjectMocks private AddTradeInHandler addTradeInHandler;
     @InjectMocks private SubmitFinanceAppHandler submitFinanceAppHandler;

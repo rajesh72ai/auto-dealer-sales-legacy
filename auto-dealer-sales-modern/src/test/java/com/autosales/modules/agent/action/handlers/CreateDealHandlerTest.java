@@ -2,6 +2,7 @@ package com.autosales.modules.agent.action.handlers;
 
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
@@ -9,6 +10,7 @@ import com.autosales.modules.sales.dto.CreateDealRequest;
 import com.autosales.modules.sales.dto.DealResponse;
 import com.autosales.modules.sales.service.DealService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +31,9 @@ import static org.mockito.Mockito.*;
 class CreateDealHandlerTest {
 
     @Mock private DealService dealService;
-    @Spy  private ObjectMapper mapper = new ObjectMapper();
+    @Spy  private PayloadValidator payloadValidator = new PayloadValidator(
+            new ObjectMapper(),
+            Validation.buildDefaultValidatorFactory().getValidator());
     @InjectMocks private CreateDealHandler handler;
 
     private CurrentUserContext.Snapshot salesUser;

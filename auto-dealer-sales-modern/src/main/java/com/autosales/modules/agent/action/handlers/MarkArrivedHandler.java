@@ -3,13 +3,13 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.vehicle.dto.ShipmentDeliverRequest;
 import com.autosales.modules.vehicle.dto.ShipmentResponse;
 import com.autosales.modules.vehicle.service.ProductionLogisticsService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +22,7 @@ import java.util.Set;
 public class MarkArrivedHandler implements ActionHandler {
 
     private final ProductionLogisticsService logisticsService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "mark_arrived"; }
     @Override public Tier tier()       { return Tier.B; }
@@ -60,12 +60,11 @@ public class MarkArrivedHandler implements ActionHandler {
     private ShipmentDeliverRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
         Map<String, Object> filtered = new java.util.HashMap<>(payload);
         filtered.remove("shipmentId");
-        ShipmentDeliverRequest req = mapper.convertValue(filtered, ShipmentDeliverRequest.class);
-        if (req.getReceivedBy() == null || req.getReceivedBy().isBlank()) {
-            req.setReceivedBy(user.getUserId());
-        }
-        return req;
+        if (blank(filtered.get("receivedBy"))) filtered.put("receivedBy", user.getUserId());
+        return payloadValidator.convertAndValidate(filtered, ShipmentDeliverRequest.class);
     }
+
+    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
 
     private ImpactPreview buildPreview(String shipmentId, ShipmentResponse resp, ShipmentDeliverRequest req) {
         ImpactPreview p = ImpactPreview.builder()

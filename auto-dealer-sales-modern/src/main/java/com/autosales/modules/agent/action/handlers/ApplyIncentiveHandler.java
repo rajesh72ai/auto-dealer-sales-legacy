@@ -3,13 +3,13 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.sales.dto.ApplyIncentivesRequest;
 import com.autosales.modules.sales.dto.DealResponse;
 import com.autosales.modules.sales.service.DealService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ import java.util.Set;
 public class ApplyIncentiveHandler implements ActionHandler {
 
     private final DealService dealService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "apply_incentive"; }
     @Override public Tier tier()       { return Tier.A; }
@@ -72,7 +72,7 @@ public class ApplyIncentiveHandler implements ActionHandler {
     private ApplyIncentivesRequest toRequest(Map<String, Object> payload) {
         Map<String, Object> filtered = new java.util.HashMap<>(payload);
         filtered.remove("dealNumber");
-        return mapper.convertValue(filtered, ApplyIncentivesRequest.class);
+        return payloadValidator.convertAndValidate(filtered, ApplyIncentivesRequest.class);
     }
 
     private ImpactPreview buildPreview(String dealNumber, DealResponse deal, ApplyIncentivesRequest req) {

@@ -3,17 +3,18 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.vehicle.dto.TransferRequest;
 import com.autosales.modules.vehicle.dto.TransferResponse;
 import com.autosales.modules.vehicle.service.StockTransferService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,7 +23,7 @@ import java.util.Set;
 public class TransferStockHandler implements ActionHandler {
 
     private final StockTransferService transferService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "transfer_stock"; }
     @Override public Tier tier()       { return Tier.B; }
@@ -57,15 +58,13 @@ public class TransferStockHandler implements ActionHandler {
     }
 
     private TransferRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
-        TransferRequest req = mapper.convertValue(payload, TransferRequest.class);
-        if (req.getRequestedBy() == null || req.getRequestedBy().isBlank()) {
-            req.setRequestedBy(user.getUserId());
-        }
-        if (req.getFromDealer() == null || req.getFromDealer().isBlank()) {
-            req.setFromDealer(user.getDealerCode());
-        }
-        return req;
+        Map<String, Object> filtered = new HashMap<>(payload);
+        if (blank(filtered.get("requestedBy"))) filtered.put("requestedBy", user.getUserId());
+        if (blank(filtered.get("fromDealer")))  filtered.put("fromDealer", user.getDealerCode());
+        return payloadValidator.convertAndValidate(filtered, TransferRequest.class);
     }
+
+    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
 
     private ImpactPreview buildPreview(TransferResponse t, TransferRequest req) {
         ImpactPreview p = ImpactPreview.builder()

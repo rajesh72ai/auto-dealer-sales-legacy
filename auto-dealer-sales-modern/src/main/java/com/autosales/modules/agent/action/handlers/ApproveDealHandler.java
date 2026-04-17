@@ -3,13 +3,13 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.sales.dto.ApprovalRequest;
 import com.autosales.modules.sales.dto.ApprovalResponse;
 import com.autosales.modules.sales.service.DealService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +22,7 @@ import java.util.Set;
 public class ApproveDealHandler implements ActionHandler {
 
     private final DealService dealService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "approve_deal"; }
     @Override public Tier tier()       { return Tier.B; }
@@ -60,15 +60,14 @@ public class ApproveDealHandler implements ActionHandler {
     private ApprovalRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
         Map<String, Object> filtered = new java.util.HashMap<>(payload);
         filtered.remove("dealNumber");
-        ApprovalRequest req = mapper.convertValue(filtered, ApprovalRequest.class);
-        if (req.getApproverId() == null || req.getApproverId().isBlank()) {
-            req.setApproverId(user.getUserId());
+        if (blank(filtered.get("approverId"))) filtered.put("approverId", user.getUserId());
+        if (blank(filtered.get("approvalType"))) {
+            filtered.put("approvalType", user.getRole() == UserRole.ADMIN ? "GM" : "MG");
         }
-        if (req.getApprovalType() == null || req.getApprovalType().isBlank()) {
-            req.setApprovalType(user.getRole() == UserRole.ADMIN ? "GM" : "MG");
-        }
-        return req;
+        return payloadValidator.convertAndValidate(filtered, ApprovalRequest.class);
     }
+
+    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
 
     private ImpactPreview buildPreview(String dealNumber, ApprovalResponse resp, ApprovalRequest req) {
         String verb = "AP".equals(req.getAction()) ? "Approve" : "Reject";

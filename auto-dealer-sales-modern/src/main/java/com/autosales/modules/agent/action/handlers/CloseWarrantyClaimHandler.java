@@ -3,13 +3,13 @@ package com.autosales.modules.agent.action.handlers;
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.registration.dto.WarrantyClaimRequest;
 import com.autosales.modules.registration.dto.WarrantyClaimResponse;
 import com.autosales.modules.registration.service.WarrantyClaimService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ import java.util.Set;
 public class CloseWarrantyClaimHandler implements ActionHandler {
 
     private final WarrantyClaimService warrantyClaimService;
-    private final ObjectMapper mapper;
+    private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "close_warranty_claim"; }
     @Override public Tier tier()       { return Tier.B; }
@@ -61,15 +61,12 @@ public class CloseWarrantyClaimHandler implements ActionHandler {
     private WarrantyClaimRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
         Map<String, Object> filtered = new java.util.HashMap<>(payload);
         filtered.remove("claimNumber");
-        WarrantyClaimRequest req = mapper.convertValue(filtered, WarrantyClaimRequest.class);
-        if (req.getDealerCode() == null || req.getDealerCode().isBlank()) {
-            req.setDealerCode(user.getDealerCode());
-        }
-        if (req.getClaimStatus() == null || req.getClaimStatus().isBlank()) {
-            req.setClaimStatus("CL");
-        }
-        return req;
+        if (blank(filtered.get("dealerCode")))  filtered.put("dealerCode", user.getDealerCode());
+        if (blank(filtered.get("claimStatus"))) filtered.put("claimStatus", "CL");
+        return payloadValidator.convertAndValidate(filtered, WarrantyClaimRequest.class);
     }
+
+    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
 
     private ImpactPreview buildPreview(String claimNumber, WarrantyClaimResponse resp, WarrantyClaimRequest req) {
         BigDecimal total = resp.getTotalClaim() != null ? resp.getTotalClaim() : BigDecimal.ZERO;

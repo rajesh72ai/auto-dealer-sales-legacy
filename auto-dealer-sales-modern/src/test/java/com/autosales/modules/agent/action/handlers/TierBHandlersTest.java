@@ -2,6 +2,7 @@ package com.autosales.modules.agent.action.handlers;
 
 import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.CurrentUserContext;
+import com.autosales.modules.agent.action.PayloadValidator;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.registration.dto.WarrantyClaimRequest;
@@ -17,6 +18,7 @@ import com.autosales.modules.vehicle.dto.TransferResponse;
 import com.autosales.modules.vehicle.service.ProductionLogisticsService;
 import com.autosales.modules.vehicle.service.StockTransferService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +48,9 @@ class TierBHandlersTest {
     // findAndRegisterModules() picks up JavaTimeModule so LocalDate fields in
     // WarrantyClaimRequest round-trip. Spring Boot registers this automatically
     // in production via jackson-datatype-jsr310 on the classpath.
-    @Spy  private ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+    @Spy  private PayloadValidator payloadValidator = new PayloadValidator(
+            new ObjectMapper().findAndRegisterModules(),
+            Validation.buildDefaultValidatorFactory().getValidator());
 
     @InjectMocks private ApproveDealHandler approveDealHandler;
     @InjectMocks private TransferStockHandler transferStockHandler;
