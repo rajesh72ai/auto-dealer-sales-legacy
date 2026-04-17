@@ -217,6 +217,15 @@ function AgentWidget() {
     }
   }, [isOpen]);
 
+  // Auto-grow the input textarea so long prompts stay visible. Caps at
+  // ~7 lines (160px) so the chat area isn't crowded; scrolls beyond that.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [input]);
+
   const refreshHistory = useCallback(async () => {
     const list = await listConversations();
     setHistory(list);
@@ -1029,8 +1038,8 @@ function AgentWidget() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask the agent… Enter to send, Shift+Enter for newline"
                 disabled={isLoading}
-                rows={1}
-                className="flex-1 resize-none rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:opacity-50"
+                rows={3}
+                className="flex-1 resize-none overflow-y-auto rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm leading-snug text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:opacity-50"
               />
               <button
                 onClick={handleSend}
