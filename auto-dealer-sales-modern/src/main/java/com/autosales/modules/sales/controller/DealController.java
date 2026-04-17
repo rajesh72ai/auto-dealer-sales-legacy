@@ -1,5 +1,6 @@
 package com.autosales.modules.sales.controller;
 
+import com.autosales.common.security.DealerScoped;
 import com.autosales.common.util.ApiResponse;
 import com.autosales.common.util.PaginatedResponse;
 import com.autosales.common.util.ResponseFormatter;
@@ -26,9 +27,14 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/deals")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 public class DealController {
+    // NOTE: Write methods (create/negotiate/validate/approve/trade-in/incentives/
+    // complete/cancel) deliberately carry method-level @PreAuthorize that
+    // EXCLUDES AGENT_SERVICE. The only legitimate agent path for these writes
+    // is the Phase-3 in-process marker flow via the action handlers. Direct
+    // OpenClaw bypass via X-API-Key is blocked here.
 
     private final DealService service;
     private final ResponseFormatter responseFormatter;
@@ -41,6 +47,7 @@ public class DealController {
     // ── List / Search ────────────────────────────────────────────────
 
     @GetMapping
+    @DealerScoped
     public ResponseEntity<PaginatedResponse<DealResponse>> list(
             @RequestParam String dealerCode,
             @RequestParam(required = false) String status,
@@ -64,6 +71,7 @@ public class DealController {
     // ── Create Worksheet ─────────────────────────────────────────────
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<DealResponse>> create(@Valid @RequestBody CreateDealRequest request) {
         log.info("Creating deal worksheet - customer: {}, VIN: {}, dealer: {}",
                 request.getCustomerId(), request.getVin(), request.getDealerCode());
@@ -75,6 +83,7 @@ public class DealController {
     // ── Negotiate ────────────────────────────────────────────────────
 
     @PostMapping("/{dealNumber}/negotiate")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<NegotiationResponse>> negotiate(
             @PathVariable String dealNumber,
             @Valid @RequestBody NegotiationRequest request) {
@@ -86,6 +95,7 @@ public class DealController {
     // ── Validate ─────────────────────────────────────────────────────
 
     @PostMapping("/{dealNumber}/validate")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<ValidationResponse>> validate(@PathVariable String dealNumber) {
         log.info("Validating deal: {}", dealNumber);
         ValidationResponse response = service.validate(dealNumber);
@@ -108,6 +118,7 @@ public class DealController {
     // ── Trade-In ─────────────────────────────────────────────────────
 
     @PostMapping("/{dealNumber}/trade-in")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<TradeInResponse>> addTradeIn(
             @PathVariable String dealNumber,
             @Valid @RequestBody TradeInRequest request) {
@@ -119,6 +130,7 @@ public class DealController {
     // ── Apply Incentives ─────────────────────────────────────────────
 
     @PostMapping("/{dealNumber}/incentives")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<DealResponse>> applyIncentives(
             @PathVariable String dealNumber,
             @Valid @RequestBody ApplyIncentivesRequest request) {
@@ -131,6 +143,7 @@ public class DealController {
     // ── Complete Sale ────────────────────────────────────────────────
 
     @PostMapping("/{dealNumber}/complete")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<DealResponse>> complete(
             @PathVariable String dealNumber,
             @Valid @RequestBody CompletionRequest request) {
@@ -142,6 +155,7 @@ public class DealController {
     // ── Cancel / Unwind ──────────────────────────────────────────────
 
     @PostMapping("/{dealNumber}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<DealResponse>> cancel(
             @PathVariable String dealNumber,
             @Valid @RequestBody CancellationRequest request) {

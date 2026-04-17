@@ -22,7 +22,7 @@ import java.time.LocalDate;
  */
 @RestController
 @RequestMapping("/api/stock/snapshots")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 @RequiredArgsConstructor
 public class StockSnapshotController {

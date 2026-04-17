@@ -22,7 +22,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/recalls")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 public class RecallController {
 

@@ -1,5 +1,6 @@
 package com.autosales.modules.customer.controller;
 
+import com.autosales.common.security.DealerScoped;
 import com.autosales.common.util.ApiResponse;
 import com.autosales.common.util.PaginatedResponse;
 import com.autosales.common.util.ResponseFormatter;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/customers")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','CLERK','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','CLERK','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 public class CustomerController {
 
@@ -34,6 +35,7 @@ public class CustomerController {
     }
 
     @GetMapping
+    @DealerScoped
     public ResponseEntity<PaginatedResponse<CustomerResponse>> list(
             @RequestParam String dealerCode,
             @RequestParam(required = false) String sort,
@@ -46,6 +48,7 @@ public class CustomerController {
     }
 
     @GetMapping("/search")
+    @DealerScoped
     public ResponseEntity<PaginatedResponse<CustomerResponse>> search(
             @RequestParam String type,
             @RequestParam String value,

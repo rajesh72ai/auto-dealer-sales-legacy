@@ -1,5 +1,6 @@
 package com.autosales.modules.registration.controller;
 
+import com.autosales.common.security.DealerScoped;
 import com.autosales.common.util.ApiResponse;
 import com.autosales.common.util.PaginatedResponse;
 import com.autosales.common.util.ResponseFormatter;
@@ -25,9 +26,12 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/warranty-claims")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 public class WarrantyClaimController {
+    // NOTE: create + update (PUT /{claimNumber}) writes deliberately carry
+    // method-level @PreAuthorize that EXCLUDES AGENT_SERVICE. The agent's
+    // close_warranty_claim handler wraps update via the Phase-3 marker flow.
 
     private final WarrantyClaimService service;
     private final ResponseFormatter responseFormatter;
@@ -38,6 +42,7 @@ public class WarrantyClaimController {
     }
 
     @GetMapping
+    @DealerScoped
     public ResponseEntity<PaginatedResponse<WarrantyClaimResponse>> list(
             @RequestParam String dealerCode,
             @RequestParam(required = false) String status,
@@ -61,6 +66,7 @@ public class WarrantyClaimController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<WarrantyClaimResponse>> create(@Valid @RequestBody WarrantyClaimRequest request) {
         log.info("Creating warranty claim for VIN: {}", request.getVin());
         WarrantyClaimResponse response = service.create(request);
@@ -69,6 +75,7 @@ public class WarrantyClaimController {
     }
 
     @PutMapping("/{claimNumber}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<WarrantyClaimResponse>> update(
             @PathVariable String claimNumber,
             @Valid @RequestBody WarrantyClaimRequest request) {

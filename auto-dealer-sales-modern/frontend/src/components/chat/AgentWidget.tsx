@@ -172,6 +172,13 @@ function AgentWidget() {
   const [inputHint, setInputHint] = useState<string | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
+  // Two-click arming for irreversible proposals: holds the message index
+  // of the proposal whose Execute button has been clicked once. Cleared on
+  // second click (executes) or Cancel click (disarms). No timer — the
+  // 5-min backend token TTL is the ultimate stale-proposal safety net,
+  // and a visible "Click again to confirm" button cannot be mistaken for
+  // a normal Execute even if the user walks away and comes back.
+  const [armedIrreversibleIdx, setArmedIrreversibleIdx] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -366,6 +373,15 @@ function AgentWidget() {
 
   const handleExecuteProposal = useCallback(
     async (msgIdx: number, proposal: AgentProposal) => {
+      // Two-click arming for irreversible actions (approve_deal, mark_arrived,
+      // close_warranty_claim). First click arms; second click executes.
+      // Armed state persists until the user either confirms or cancels —
+      // the 5-min backend token TTL bounds stale-proposal risk.
+      if (!proposal.reversible && armedIrreversibleIdx !== msgIdx) {
+        setArmedIrreversibleIdx(msgIdx);
+        return;
+      }
+      setArmedIrreversibleIdx(null);
       updateProposalStatus(msgIdx, 'executing');
       try {
         const result = await confirmProposal(proposal.token);
@@ -379,11 +395,12 @@ function AgentWidget() {
         updateProposalStatus(msgIdx, 'failed', msg);
       }
     },
-    [updateProposalStatus],
+    [updateProposalStatus, armedIrreversibleIdx],
   );
 
   const handleCancelProposal = useCallback(
     async (msgIdx: number, proposal: AgentProposal) => {
+      setArmedIrreversibleIdx((curr) => (curr === msgIdx ? null : curr));
       updateProposalStatus(msgIdx, 'executing');
       try {
         await rejectProposal(proposal.token);
@@ -758,7 +775,14 @@ function AgentWidget() {
                             <p className="mt-1.5 text-[13px] leading-snug">{msg.proposalError}</p>
                           </div>
                         )}
-                        {msg.proposal && (
+                        {msg.proposal && (() => {
+                          const isIrreversible = msg.proposal.reversible === false;
+                          const isPending = !msg.proposalStatus || msg.proposalStatus === 'pending';
+                          const isArmed = armedIrreversibleIdx === idx;
+                          const pendingStyle = isIrreversible
+                            ? 'border-rose-400 bg-rose-50 text-rose-900'
+                            : 'border-amber-300 bg-amber-50 text-amber-900';
+                          return (
                           <div
                             className={`mt-3 rounded-lg border p-3 text-sm ${
                               msg.proposalStatus === 'executed'
@@ -767,8 +791,8 @@ function AgentWidget() {
                                 ? 'border-gray-200 bg-gray-50 text-gray-700'
                                 : msg.proposalStatus === 'failed'
                                 ? 'border-rose-200 bg-rose-50 text-rose-900'
-                                : 'border-amber-300 bg-amber-50 text-amber-900'
-                            }`}
+                                : pendingStyle
+                            } ${isIrreversible && isPending ? 'border-2' : ''}`}
                           >
                             <div className="flex items-center gap-2 font-semibold">
                               {msg.proposalStatus === 'executed' ? (
@@ -777,6 +801,8 @@ function AgentWidget() {
                                 <XCircle className="h-4 w-4 text-gray-500" />
                               ) : msg.proposalStatus === 'failed' ? (
                                 <XCircle className="h-4 w-4 text-rose-600" />
+                              ) : isIrreversible ? (
+                                <AlertTriangle className="h-4 w-4 text-rose-700" />
                               ) : (
                                 <ShieldCheck className="h-4 w-4 text-amber-700" />
                               )}
@@ -789,11 +815,18 @@ function AgentWidget() {
                                   ? 'Failed'
                                   : msg.proposalStatus === 'executing'
                                   ? 'Executing…'
+                                  : isIrreversible
+                                  ? 'Permanent action — review carefully'
                                   : 'Proposed action — awaiting confirmation'}
                               </span>
                               <span className="ml-1 rounded-full bg-white/60 px-1.5 py-0.5 text-[10px] font-mono">
                                 {msg.proposal.toolName} · Tier {msg.proposal.tier}
                               </span>
+                              {isIrreversible && isPending && (
+                                <span className="rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                  ⚠ PERMANENT
+                                </span>
+                              )}
                             </div>
                             {msg.proposal.preview?.summary && (
                               <p className="mt-1.5 text-[13px] leading-snug">
@@ -825,10 +858,24 @@ function AgentWidget() {
                               <div className="mt-2.5 flex items-center gap-2">
                                 <button
                                   onClick={() => handleExecuteProposal(idx, msg.proposal!)}
-                                  className="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+                                  className={`flex items-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-colors ${
+                                    isIrreversible
+                                      ? isArmed
+                                        ? 'bg-rose-700 ring-2 ring-rose-300 animate-pulse hover:bg-rose-800'
+                                        : 'bg-rose-600 hover:bg-rose-700'
+                                      : 'bg-emerald-600 hover:bg-emerald-700'
+                                  }`}
                                 >
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                  Execute
+                                  {isIrreversible ? (
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                  )}
+                                  {isIrreversible
+                                    ? isArmed
+                                      ? 'Click again to confirm (permanent)'
+                                      : 'Execute — permanent'
+                                    : 'Execute'}
                                 </button>
                                 <button
                                   onClick={() => handleCancelProposal(idx, msg.proposal!)}
@@ -854,7 +901,8 @@ function AgentWidget() {
                               </div>
                             )}
                           </div>
-                        )}
+                          );
+                        })()}
                         {msg.content.length > 0 && (
                           <div className="mt-2 flex flex-wrap items-center gap-1 border-t border-gray-200 pt-2">
                             <button

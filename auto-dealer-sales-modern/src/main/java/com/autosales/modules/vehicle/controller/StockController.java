@@ -25,7 +25,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/stock")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 @RequiredArgsConstructor
 public class StockController {

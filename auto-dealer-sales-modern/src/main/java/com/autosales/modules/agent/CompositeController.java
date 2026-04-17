@@ -31,7 +31,7 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/api/composite")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','CLERK','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','CLERK','OPERATOR','AGENT_SERVICE')")
 public class CompositeController {
 
     private static final Logger log = LoggerFactory.getLogger(CompositeController.class);

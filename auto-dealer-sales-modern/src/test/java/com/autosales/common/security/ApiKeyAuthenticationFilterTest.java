@@ -44,7 +44,7 @@ class ApiKeyAuthenticationFilterTest {
     }
 
     @Test
-    @DisplayName("Valid API key should authenticate as OPER_AI with ROLE_OPERATOR")
+    @DisplayName("Valid API key authenticates as AGENT_SERVICE (not OPERATOR)")
     void testValidApiKey() throws Exception {
         when(request.getHeader("X-API-Key")).thenReturn(TEST_API_KEY);
 
@@ -52,9 +52,13 @@ class ApiKeyAuthenticationFilterTest {
 
         var auth = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(auth, "Authentication should be set");
-        assertEquals("OPER_AI", auth.getPrincipal());
+        assertEquals("AGENT_SERVICE", auth.getPrincipal());
         assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR")));
+                .anyMatch(a -> a.getAuthority().equals("ROLE_AGENT_SERVICE")),
+                "API-key auth should grant ROLE_AGENT_SERVICE");
+        assertFalse(auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR")),
+                "API-key auth must NOT grant ROLE_OPERATOR — that's reserved for human dealership operator users via JWT");
         verify(filterChain).doFilter(request, response);
     }
 

@@ -29,6 +29,12 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class ProductionLogisticsController {
+    // NOTE: Class-level auth intentionally omits AGENT_SERVICE — all writes
+    // on this controller (orders, shipments, PDI, reconciliation, transit
+    // status) are either Phase-3-wrapped (mark_arrived → deliverShipment)
+    // or out-of-scope for the agent. Specific READ endpoints the agent
+    // needs (list shipments, get shipment, transit history / ETA) add
+    // AGENT_SERVICE via method-level @PreAuthorize.
 
     private final ProductionLogisticsService service;
     private final ResponseFormatter responseFormatter;
@@ -98,6 +104,7 @@ public class ProductionLogisticsController {
     }
 
     @GetMapping("/shipments")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
     public ResponseEntity<PaginatedResponse<ShipmentResponse>> listShipments(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String dealer,
@@ -111,6 +118,7 @@ public class ProductionLogisticsController {
     }
 
     @GetMapping("/shipments/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
     public ResponseEntity<ApiResponse<ShipmentResponse>> getShipment(@PathVariable String id) {
         log.info("GET /api/production/shipments/{}", id);
         ShipmentResponse response = service.getShipment(id);
@@ -147,6 +155,7 @@ public class ProductionLogisticsController {
     // ════════════════════════════════════════════════════════════════════
 
     @GetMapping("/transit/{vin}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
     public ResponseEntity<ApiResponse<List<TransitStatusResponse>>> getTransitHistory(
             @PathVariable String vin) {
         log.info("GET /api/production/transit/{}", vin);
@@ -163,6 +172,7 @@ public class ProductionLogisticsController {
     }
 
     @GetMapping("/transit/{vin}/eta")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
     public ResponseEntity<ApiResponse<EtaResponse>> calculateEta(@PathVariable String vin) {
         log.info("GET /api/production/transit/{}/eta", vin);
         EtaResponse response = service.calculateEta(vin);

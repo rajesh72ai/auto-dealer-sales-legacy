@@ -21,15 +21,20 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/stock/transfers")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 @RequiredArgsConstructor
 public class StockTransferController {
+    // NOTE: All write methods (requestTransfer / approveTransfer / completeTransfer
+    // / cancelTransfer) deliberately carry method-level @PreAuthorize that
+    // EXCLUDES AGENT_SERVICE. The agent's transfer_stock handler wraps
+    // requestTransfer via the Phase-3 in-process marker flow.
 
     private final StockTransferService service;
     private final ResponseFormatter responseFormatter;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
     public ResponseEntity<ApiResponse<TransferResponse>> requestTransfer(
             @Valid @RequestBody TransferRequest request) {
         log.info("POST /api/stock/transfers — vin={}, from={}, to={}",
@@ -58,6 +63,7 @@ public class StockTransferController {
     }
 
     @PostMapping("/{id}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
     public ResponseEntity<ApiResponse<TransferResponse>> approveTransfer(
             @PathVariable int id,
             @Valid @RequestBody TransferApprovalRequest request) {
@@ -67,6 +73,7 @@ public class StockTransferController {
     }
 
     @PostMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
     public ResponseEntity<ApiResponse<TransferResponse>> completeTransfer(@PathVariable int id) {
         log.info("POST /api/stock/transfers/{}/complete", id);
         TransferResponse response = service.completeTransfer(id);
@@ -74,6 +81,7 @@ public class StockTransferController {
     }
 
     @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
     public ResponseEntity<ApiResponse<TransferResponse>> cancelTransfer(@PathVariable int id) {
         log.info("POST /api/stock/transfers/{}/cancel", id);
         TransferResponse response = service.cancelTransfer(id);

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/admin/dealers")
-@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 public class DealerController {
 

@@ -24,7 +24,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/registrations")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 public class RegistrationController {
 

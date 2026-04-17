@@ -22,10 +22,15 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/finance/applications")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 @RequiredArgsConstructor
 public class FinanceAppController {
+    // NOTE: Write methods on this controller (createApplication, approveOrDecline)
+    // deliberately carry method-level @PreAuthorize that EXCLUDES AGENT_SERVICE.
+    // The only legitimate agent path for these writes is the Phase-3 in-process
+    // marker flow via SubmitFinanceAppHandler. Calculator endpoints are stateless
+    // and can stay open to AGENT_SERVICE for Custom Chat calculate_loan / lease tools.
 
     private final FinanceAppService financeAppService;
     private final ResponseFormatter responseFormatter;
@@ -58,6 +63,7 @@ public class FinanceAppController {
     // -- Create Application ---------------------------------------------------
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR')")
     public ResponseEntity<ApiResponse<FinanceAppResponse>> createApplication(
             @Valid @RequestBody FinanceAppRequest request) {
         log.info("Creating finance application - deal: {}, type: {}", request.getDealNumber(), request.getFinanceType());
@@ -69,6 +75,7 @@ public class FinanceAppController {
     // -- Approve / Decline ----------------------------------------------------
 
     @PostMapping("/approve")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE')")
     public ResponseEntity<ApiResponse<FinanceApprovalResponse>> approveOrDecline(
             @Valid @RequestBody FinanceApprovalRequest request) {
         log.info("Finance approval action - financeId: {}, action: {}", request.getFinanceId(), request.getAction());

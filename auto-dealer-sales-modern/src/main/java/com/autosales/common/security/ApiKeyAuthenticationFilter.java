@@ -20,14 +20,29 @@ import java.util.List;
 
 /**
  * Authenticates requests using a static API key via the X-API-Key header.
- * Used by OpenClaw AI gateway for service-to-service communication.
- * Grants ROLE_OPERATOR — read access to all endpoints + safe POST actions.
+ * Used by OpenClaw AI gateway and other service-to-service callers.
+ *
+ * Grants {@code ROLE_AGENT_SERVICE} — NOT {@code ROLE_OPERATOR}. This matters
+ * because human dealership operators authenticate via JWT and receive
+ * {@code ROLE_OPERATOR}; conflating the two would let OpenClaw reach
+ * write endpoints meant for human operators (e.g., deal approval, mark
+ * shipment arrived) and bypass the Phase 3 propose→confirm→commit flow.
+ *
+ * Endpoints must opt in to service access by including
+ * {@code 'AGENT_SERVICE'} in their {@code @PreAuthorize} role list. Phase-3
+ * wrapped write endpoints (create deal, approve deal, add trade-in,
+ * apply incentive, submit finance app, close warranty claim, transfer
+ * stock, mark shipment arrived) deliberately omit AGENT_SERVICE — the
+ * only legitimate agent path for those is the in-process marker flow
+ * orchestrated by {@code ActionService}.
  */
 @Component
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(ApiKeyAuthenticationFilter.class);
     private static final String API_KEY_HEADER = "X-API-Key";
+    private static final String SERVICE_PRINCIPAL = "AGENT_SERVICE";
+    private static final String SERVICE_ROLE = "ROLE_AGENT_SERVICE";
 
     @Value("${api.key}")
     private String apiKey;
@@ -42,15 +57,15 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(requestApiKey) && requestApiKey.equals(apiKey)) {
                 List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_OPERATOR")
+                        new SimpleGrantedAuthority(SERVICE_ROLE)
                 );
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken("OPER_AI", null, authorities);
+                        new UsernamePasswordAuthenticationToken(SERVICE_PRINCIPAL, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("API key authenticated for OPER_AI");
+                log.debug("API key authenticated for {}", SERVICE_PRINCIPAL);
             }
         }
 
