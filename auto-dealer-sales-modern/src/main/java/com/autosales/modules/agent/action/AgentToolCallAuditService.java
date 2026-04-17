@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,9 @@ public class AgentToolCallAuditService {
 
     private final AgentToolCallAuditRepository repo;
     private final ObjectMapper mapper;
+
+    @Value("${agent.action.undo-window-seconds:60}")
+    private long undoWindowSeconds;
 
     @Transactional
     public AgentToolCallAudit recordProposed(CurrentUserContext.Snapshot user, String conversationId,
@@ -73,7 +77,7 @@ public class AgentToolCallAuditService {
                 .dryRun(false)
                 .reversible(reversible)
                 .compensationJson(compensation != null ? toJson(compensation) : null)
-                .undoExpiresAt(reversible ? LocalDateTime.now().plusSeconds(10) : null)
+                .undoExpiresAt(reversible ? LocalDateTime.now().plusSeconds(undoWindowSeconds) : null)
                 .undone(false)
                 .build();
         return repo.save(a);

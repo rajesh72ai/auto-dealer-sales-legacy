@@ -45,11 +45,11 @@ import {
   deleteConversation,
 } from '@/api/agent';
 import type { AgentProposal, ConversationSummary, TurnUsage } from '@/api/agent';
-import { confirmProposal, rejectProposal } from '@/api/actions';
+import { confirmProposal, rejectProposal, undoExecutedAction } from '@/api/actions';
 import { getMyQuota } from '@/api/agentUsage';
 import type { QuotaStatus } from '@/api/agentUsage';
 
-type ProposalStatus = 'pending' | 'executing' | 'executed' | 'cancelled' | 'failed';
+type ProposalStatus = 'pending' | 'executing' | 'executed' | 'cancelled' | 'failed' | 'undoing' | 'undone';
 
 interface DisplayMessage {
   role: 'user' | 'assistant';
@@ -60,6 +60,9 @@ interface DisplayMessage {
   proposalStatus?: ProposalStatus;
   proposalResultMessage?: string;
   proposalError?: string;
+  /** Set after EXECUTED for reversible actions — drives the Undo button + countdown. */
+  proposalAuditId?: number;
+  proposalUndoExpiresAt?: number; // epoch ms
 }
 
 interface WorkflowRecipe {
@@ -226,6 +229,19 @@ function AgentWidget() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
+  // Drives the Undo countdown chip. We tick at 1Hz only when at least one
+  // executed-with-undo card is currently showing, to avoid a permanent
+  // background timer.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const hasActiveUndo = messages.some(
+      (m) => m.proposalUndoExpiresAt && m.proposalUndoExpiresAt > Date.now(),
+    );
+    if (!hasActiveUndo) return;
+    const interval = setInterval(() => forceTick((n) => n + 1), 1000);
+    return () => clearInterval(interval);
+  }, [messages]);
+
   const refreshHistory = useCallback(async () => {
     const list = await listConversations();
     setHistory(list);
@@ -365,7 +381,12 @@ function AgentWidget() {
   }, [input, sendMessage]);
 
   const updateProposalStatus = useCallback(
-    (msgIdx: number, status: ProposalStatus, message?: string) => {
+    (
+      msgIdx: number,
+      status: ProposalStatus,
+      message?: string,
+      undo?: { auditId: number; expiresAt: number },
+    ) => {
       setMessages((prev) => {
         if (msgIdx < 0 || msgIdx >= prev.length) return prev;
         const updated = [...prev];
@@ -373,6 +394,9 @@ function AgentWidget() {
           ...updated[msgIdx],
           proposalStatus: status,
           proposalResultMessage: message,
+          ...(undo
+            ? { proposalAuditId: undo.auditId, proposalUndoExpiresAt: undo.expiresAt }
+            : {}),
         };
         return updated;
       });
@@ -394,10 +418,22 @@ function AgentWidget() {
       updateProposalStatus(msgIdx, 'executing');
       try {
         const result = await confirmProposal(proposal.token);
+        const isExecuted = result.status === 'EXECUTED';
+        // Use the server-provided window duration + browser clock, NOT the
+        // server's absolute timestamp (which is timezone-naive LocalDateTime
+        // and would mis-parse across browser/server timezone boundaries).
+        const undo =
+          isExecuted && result.reversible && result.auditId && result.undoWindowSeconds
+            ? {
+                auditId: result.auditId,
+                expiresAt: Date.now() + result.undoWindowSeconds * 1000,
+              }
+            : undefined;
         updateProposalStatus(
           msgIdx,
-          result.status === 'EXECUTED' ? 'executed' : 'failed',
+          isExecuted ? 'executed' : 'failed',
           result.message || `Audit #${result.auditId ?? '—'}`,
+          undo,
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Execution failed.';
@@ -416,6 +452,24 @@ function AgentWidget() {
         updateProposalStatus(msgIdx, 'cancelled', 'Action cancelled by user');
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Cancel failed.';
+        updateProposalStatus(msgIdx, 'failed', msg);
+      }
+    },
+    [updateProposalStatus],
+  );
+
+  const handleUndoExecuted = useCallback(
+    async (msgIdx: number, auditId: number) => {
+      updateProposalStatus(msgIdx, 'undoing', 'Undoing…');
+      try {
+        const result = await undoExecutedAction(auditId);
+        updateProposalStatus(
+          msgIdx,
+          result.status === 'UNDONE' ? 'undone' : 'failed',
+          result.message || `Compensation audit #${result.auditId ?? '—'}`,
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Undo failed.';
         updateProposalStatus(msgIdx, 'failed', msg);
       }
     },
@@ -791,10 +845,19 @@ function AgentWidget() {
                           const pendingStyle = isIrreversible
                             ? 'border-rose-400 bg-rose-50 text-rose-900'
                             : 'border-amber-300 bg-amber-50 text-amber-900';
+                          const undoSecondsLeft = msg.proposalUndoExpiresAt
+                            ? Math.max(0, Math.ceil((msg.proposalUndoExpiresAt - Date.now()) / 1000))
+                            : 0;
+                          const canUndo =
+                            msg.proposalStatus === 'executed' &&
+                            msg.proposalAuditId !== undefined &&
+                            undoSecondsLeft > 0;
                           return (
                           <div
                             className={`mt-3 rounded-lg border p-3 text-sm ${
-                              msg.proposalStatus === 'executed'
+                              msg.proposalStatus === 'undone'
+                                ? 'border-sky-200 bg-sky-50 text-sky-900'
+                                : msg.proposalStatus === 'executed'
                                 ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
                                 : msg.proposalStatus === 'cancelled'
                                 ? 'border-gray-200 bg-gray-50 text-gray-700'
@@ -804,7 +867,9 @@ function AgentWidget() {
                             } ${isIrreversible && isPending ? 'border-2' : ''}`}
                           >
                             <div className="flex items-center gap-2 font-semibold">
-                              {msg.proposalStatus === 'executed' ? (
+                              {msg.proposalStatus === 'undone' ? (
+                                <Shuffle className="h-4 w-4 text-sky-600" />
+                              ) : msg.proposalStatus === 'executed' ? (
                                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                               ) : msg.proposalStatus === 'cancelled' ? (
                                 <XCircle className="h-4 w-4 text-gray-500" />
@@ -816,7 +881,9 @@ function AgentWidget() {
                                 <ShieldCheck className="h-4 w-4 text-amber-700" />
                               )}
                               <span>
-                                {msg.proposalStatus === 'executed'
+                                {msg.proposalStatus === 'undone'
+                                  ? 'Undone'
+                                  : msg.proposalStatus === 'executed'
                                   ? 'Executed'
                                   : msg.proposalStatus === 'cancelled'
                                   ? 'Cancelled'
@@ -824,6 +891,8 @@ function AgentWidget() {
                                   ? 'Failed'
                                   : msg.proposalStatus === 'executing'
                                   ? 'Executing…'
+                                  : msg.proposalStatus === 'undoing'
+                                  ? 'Undoing…'
                                   : isIrreversible
                                   ? 'Permanent action — review carefully'
                                   : 'Proposed action — awaiting confirmation'}
@@ -907,6 +976,29 @@ function AgentWidget() {
                               <div className="mt-2 flex items-center gap-2 text-[12px] text-amber-800">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 Working…
+                              </div>
+                            )}
+                            {canUndo && (
+                              <div className="mt-2.5 flex items-center gap-2">
+                                <button
+                                  onClick={() =>
+                                    handleUndoExecuted(idx, msg.proposalAuditId!)
+                                  }
+                                  className="flex items-center gap-1 rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-emerald-800 transition-colors hover:bg-emerald-50"
+                                  title="Reverse this action via the recorded compensation"
+                                >
+                                  <Shuffle className="h-3.5 w-3.5" />
+                                  Undo ({undoSecondsLeft}s)
+                                </button>
+                                <span className="text-[11px] italic text-emerald-700">
+                                  reverses via compensation
+                                </span>
+                              </div>
+                            )}
+                            {msg.proposalStatus === 'undoing' && (
+                              <div className="mt-2 flex items-center gap-2 text-[12px] text-sky-700">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Undoing…
                               </div>
                             )}
                           </div>

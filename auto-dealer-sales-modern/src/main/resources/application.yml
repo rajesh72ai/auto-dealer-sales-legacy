@@ -64,6 +64,16 @@ agent:
   max-rounds: 20
   timeout-seconds: 180
   daily-token-quota-per-user: ${AGENT_DAILY_TOKEN_QUOTA:200000}
+  # Phase-3 Safe Action Framework
+  action:
+    # Confirmation token TTL — how long a proposal can sit before the user must
+    # re-prompt. 5 minutes balances think-time against stale-state risk.
+    token-ttl-seconds: ${AGENT_ACTION_TOKEN_TTL:300}
+    # Undo window — after a reversible action executes, user has this many
+    # seconds to click Undo and trigger the compensation. Was 10s in v1
+    # scaffold; bumped to 60s after dogfooding feedback (10s too short for
+    # thoughtful users).
+    undo-window-seconds: ${AGENT_ACTION_UNDO_WINDOW:60}
   # USD pricing per 1,000,000 tokens. Defaults: Claude Sonnet 4.6 published rates.
   # Override via env when rates change or when using a different model.
   pricing:

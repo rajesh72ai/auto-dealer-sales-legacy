@@ -33,6 +33,9 @@ public class ActionService {
     private final CurrentUserContext userContext;
     private final ObjectMapper mapper;
 
+    @org.springframework.beans.factory.annotation.Value("${agent.action.undo-window-seconds:60}")
+    private int undoWindowSeconds;
+
     public ProposalResponse propose(String toolName, Map<String, Object> payload, String conversationId) {
         return propose(userContext.current(), toolName, payload, conversationId);
     }
@@ -130,6 +133,8 @@ public class ActionService {
                 .auditId(audit.getAuditId())
                 .message("Action executed successfully")
                 .reversible(handler.reversible())
+                .undoExpiresAt(audit.getUndoExpiresAt())
+                .undoWindowSeconds(handler.reversible() ? undoWindowSeconds : null)
                 .build();
     }
 

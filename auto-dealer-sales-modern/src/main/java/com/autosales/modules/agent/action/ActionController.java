@@ -20,6 +20,8 @@ public class ActionController {
 
     private final ActionService actionService;
     private final ActionRegistry registry;
+    private final UndoService undoService;
+    private final CurrentUserContext userContext;
 
     @PostMapping("/propose")
     public ResponseEntity<ProposalResponse> propose(@Valid @RequestBody ProposeRequest req) {
@@ -35,6 +37,17 @@ public class ActionController {
     @DeleteMapping("/reject/{token}")
     public ResponseEntity<ExecutionResult> reject(@PathVariable String token) {
         return ResponseEntity.ok(actionService.reject(token));
+    }
+
+    /**
+     * Undo a previously-EXECUTED reversible action within its undo window.
+     * Returns 200 with the compensation result on success; 400/410 if the
+     * window has expired, the action was not reversible, was already undone,
+     * or the compensation action is not yet activated for this tool.
+     */
+    @PostMapping("/undo/{auditId}")
+    public ResponseEntity<ExecutionResult> undo(@PathVariable Long auditId) {
+        return ResponseEntity.ok(undoService.execute(auditId, userContext.current()));
     }
 
     @GetMapping("/registry")
