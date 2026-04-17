@@ -25,7 +25,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/production")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
 @Slf4j
 @RequiredArgsConstructor
 public class ProductionLogisticsController {

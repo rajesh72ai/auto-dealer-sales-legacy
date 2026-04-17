@@ -21,7 +21,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/batch/jobs")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
 @Slf4j
 @RequiredArgsConstructor
 public class BatchJobController {

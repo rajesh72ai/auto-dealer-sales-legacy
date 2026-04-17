@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class FinanceApp {
 
     @Id
-    @Column(name = "finance_id")
+    @Column(name = "finance_id", length = 12)
     private String financeId;
 
     @Column(name = "deal_number", nullable = false)

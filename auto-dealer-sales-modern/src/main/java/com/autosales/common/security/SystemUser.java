@@ -20,19 +20,19 @@ import java.time.LocalDateTime;
 public class SystemUser {
 
     @Id
-    @Column(name = "user_id", length = 20)
+    @Column(name = "user_id", length = 8)
     private String userId;
 
     @Column(name = "user_name", length = 60)
     private String userName;
 
-    @Column(name = "password_hash", length = 200)
+    @Column(name = "password_hash", length = 64)
     private String passwordHash;
 
     @Column(name = "user_type", length = 1)
     private String userType;
 
-    @Column(name = "dealer_code", length = 10)
+    @Column(name = "dealer_code", length = 5)
     private String dealerCode;
 
     @Column(name = "active_flag", length = 1)

@@ -32,6 +32,29 @@ services:
       SPRING_DATASOURCE_USERNAME: autosales
       SPRING_DATASOURCE_PASSWORD: autosales
       JWT_SECRET: autosales-docker-secret-key-must-be-at-least-256-bits-long-change-in-prod
+      API_KEY: autosales-openclaw-operator-key-2026
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      TOGETHER_API_KEY: ${TOGETHER_API_KEY}
+      TOGETHER_MODEL: ${TOGETHER_MODEL:-meta-llama/Llama-3.3-70B-Instruct-Turbo}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
+      LLM_DEFAULT_PROVIDER: ${LLM_DEFAULT_PROVIDER:-groq}
+      OPENCLAW_GATEWAY_URL: http://openclaw-gateway:18789
+      # Admin API — dangerous scope. Only the `app` service needs it (for the
+      # admin usage page). NEVER pass to `openclaw-gateway` or `frontend`.
+      # Leave unset in production if you don't need the actuals dashboard.
+      ANTHROPIC_ADMIN_API_KEY: ${ANTHROPIC_ADMIN_API_KEY:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8480/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - autosales-net
 
@@ -44,6 +67,41 @@ services:
       - app
     environment:
       VITE_API_BASE: http://autosales-app:8480
+    networks:
+      - autosales-net
+
+  # OpenClaw gateway — re-enabled for agent-based AI powered by Claude API
+  # Skills loaded from ./openclaw/skills (autosales-api = Level 4 agentic skill)
+  openclaw-gateway:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw-gateway
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18789:18789"
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-openclaw-autosales-local}
+      AUTOSALES_API_KEY: autosales-openclaw-operator-key-2026
+      ANTHROPIC_API_KEY: ${CLAUDE_API_KEY}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - /c/Users/rajeshr/openclaw/config:/home/node/.openclaw
+      - ./openclaw/skills:/home/node/.openclaw/skills:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    init: true
+    restart: unless-stopped
+    command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - autosales-net
 

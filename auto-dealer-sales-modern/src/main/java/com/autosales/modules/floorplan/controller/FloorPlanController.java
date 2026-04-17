@@ -27,7 +27,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/floorplan")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','OPERATOR')")
 @Slf4j
 @RequiredArgsConstructor
 public class FloorPlanController {

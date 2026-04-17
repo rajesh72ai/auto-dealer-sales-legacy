@@ -1,6 +1,8 @@
 import { useLocation, Link } from 'react-router-dom';
 import { LogOut, ChevronRight, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
+import ChatWidget from '@/components/chat/ChatWidget';
+import AgentWidget from '@/components/chat/AgentWidget';
 
 const routeLabels: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -98,6 +100,11 @@ function Header() {
                 {user.userType}
               </span>
             </div>
+
+            <div className="h-6 w-px bg-gray-200" />
+
+            <ChatWidget />
+            <AgentWidget />
 
             <div className="h-6 w-px bg-gray-200" />
 

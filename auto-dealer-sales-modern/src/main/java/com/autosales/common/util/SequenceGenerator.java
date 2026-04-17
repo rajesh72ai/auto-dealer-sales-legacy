@@ -32,67 +32,60 @@ public class SequenceGenerator {
     private EntityManager entityManager;
 
     /**
-     * Generate the next deal number. Format: D-0000000026
+     * Generate the next deal number. Format: D-00000026 (10 chars = VARCHAR(10) column width).
+     * Max sequence value: 99,999,999 before overflow.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String generateDealNumber() {
         long next = getNextValue("SEQ_DEAL");
-        String formatted = String.format("D-%010d", next);
+        String formatted = String.format("D-%08d", next);
         log.debug("Generated deal number: {}", formatted);
         return formatted;
     }
 
     /**
-     * Generate the next finance ID. Format: F-000000000016
+     * Generate the next finance ID. Format: F-0000000016 (12 chars = VARCHAR(12) column width).
+     * Max sequence value: 9,999,999,999.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String generateFinanceId() {
         long next = getNextValue("SEQ_FINANCE");
-        String formatted = String.format("F-%012d", next);
+        String formatted = String.format("F-%010d", next);
         log.debug("Generated finance ID: {}", formatted);
         return formatted;
     }
 
     /**
-     * Generate the next registration ID. Format: R-000000000016
+     * Generate the next registration ID. Format: R-0000000016 (12 chars = VARCHAR(12) column width).
+     * Max sequence value: 9,999,999,999.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String generateRegistrationId() {
         long next = getNextValue("SEQ_REGISTRATION");
-        String formatted = String.format("R-%012d", next);
+        String formatted = String.format("R-%010d", next);
         log.debug("Generated registration ID: {}", formatted);
         return formatted;
     }
 
     /**
-     * Generate the next transfer ID. Format: T-000000000016
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public String generateTransferId() {
-        long next = getNextValue("SEQ_TRANSFER");
-        String formatted = String.format("T-%012d", next);
-        log.debug("Generated transfer ID: {}", formatted);
-        return formatted;
-    }
-
-    /**
-     * Generate the next shipment ID. Format: S-000000000016
+     * Generate the next shipment ID. Format: S-0000000016 (12 chars = VARCHAR(12) column width).
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String generateShipmentId() {
         long next = getNextValue("SEQ_SHIPMENT");
-        String formatted = String.format("S-%012d", next);
+        String formatted = String.format("S-%010d", next);
         log.debug("Generated shipment ID: {}", formatted);
         return formatted;
     }
 
     /**
-     * Generate the next stock number. Format: STK-00000016
+     * Generate the next stock number. Format: STK00016 (8 chars = VARCHAR(8) column width).
+     * Max sequence value: 99,999 — sufficient for demo; re-audit before high-volume prod.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String generateStockNumber() {
         long next = getNextValue("SEQ_STOCK");
-        String formatted = String.format("STK-%08d", next);
+        String formatted = String.format("STK%05d", next);
         log.debug("Generated stock number: {}", formatted);
         return formatted;
     }

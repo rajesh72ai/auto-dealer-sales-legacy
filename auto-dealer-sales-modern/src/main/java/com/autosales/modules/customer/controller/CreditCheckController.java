@@ -20,7 +20,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/credit-checks")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
 @Slf4j
 public class CreditCheckController {
 

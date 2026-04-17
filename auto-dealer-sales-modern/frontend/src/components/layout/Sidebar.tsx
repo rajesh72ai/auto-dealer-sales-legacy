@@ -35,6 +35,8 @@ import {
   PlayCircle,
   UserCog,
   ScrollText,
+  Sparkles,
+  Lightbulb,
 } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 
@@ -139,6 +141,8 @@ const navGroups: NavGroupDef[] = [
       { label: 'Salespersons', path: '/admin/salespersons', icon: <Users className={iconClass} />, roles: ['ADMIN'] },
       { label: 'Users', path: '/admin/users', icon: <UserCog className={iconClass} />, roles: ['ADMIN'] },
       { label: 'Audit Log', path: '/admin/audit-log', icon: <ScrollText className={iconClass} />, roles: ['ADMIN'] },
+      { label: 'AI Usage & Cost', path: '/admin/agent-usage', icon: <Sparkles className={iconClass} />, roles: ['ADMIN'] },
+      { label: 'AI Capability Backlog', path: '/admin/capability-gaps', icon: <Lightbulb className={iconClass} />, roles: ['ADMIN'] },
       { label: 'Config', path: '/admin/config', icon: <Settings className={iconClass} />, roles: ['ADMIN'] },
     ],
   },

@@ -19,7 +19,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/warranties")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','SALESPERSON')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','SALESPERSON','OPERATOR')")
 @Slf4j
 public class WarrantyController {
 

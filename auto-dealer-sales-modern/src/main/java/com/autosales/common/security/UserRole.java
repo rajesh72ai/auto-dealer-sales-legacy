@@ -5,7 +5,8 @@ public enum UserRole {
     MANAGER("M"),
     SALESPERSON("S"),
     FINANCE("F"),
-    CLERK("C");
+    CLERK("C"),
+    OPERATOR("O");
 
     private final String code;
 

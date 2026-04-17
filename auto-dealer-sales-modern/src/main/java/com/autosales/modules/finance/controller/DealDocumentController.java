@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/finance/documents")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','SALESPERSON')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','FINANCE','SALESPERSON','OPERATOR')")
 @Slf4j
 @RequiredArgsConstructor
 public class DealDocumentController {

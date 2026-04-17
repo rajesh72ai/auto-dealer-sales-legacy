@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/deals")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','OPERATOR')")
 @Slf4j
 public class DealController {
 
@@ -95,7 +95,7 @@ public class DealController {
     // ── Approve / Reject ─────────────────────────────────────────────
 
     @PostMapping("/{dealNumber}/approve")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','OPERATOR')")
     public ResponseEntity<ApiResponse<ApprovalResponse>> approve(
             @PathVariable String dealNumber,
             @Valid @RequestBody ApprovalRequest request) {

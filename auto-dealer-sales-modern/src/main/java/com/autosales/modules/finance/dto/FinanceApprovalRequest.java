@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class FinanceApprovalRequest {
 
     @NotBlank(message = "Finance ID is required")
-    @Size(max = 10)
+    @Size(max = 12, message = "Finance ID cannot exceed 12 characters")
     private String financeId;
 
     @NotBlank(message = "Action is required")

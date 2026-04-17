@@ -26,7 +26,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/vehicles")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','OPERATOR')")
 @Slf4j
 @RequiredArgsConstructor
 public class VehicleController {

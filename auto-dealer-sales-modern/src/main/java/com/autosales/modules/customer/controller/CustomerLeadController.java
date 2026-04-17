@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/leads")
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','OPERATOR')")
 @Slf4j
 public class CustomerLeadController {
 

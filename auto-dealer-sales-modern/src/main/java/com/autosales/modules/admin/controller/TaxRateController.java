@@ -25,7 +25,7 @@ import java.time.LocalDate;
  */
 @RestController
 @RequestMapping("/api/admin/tax-rates")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 @Slf4j
 public class TaxRateController {
 

@@ -98,13 +98,13 @@ class RegistrationServiceTest {
     void testCreate_generatesIdAndSetsPreparingStatus() {
         RegistrationRequest request = buildRequest();
         when(registrationRepository.existsByDealNumber("D-0000000001")).thenReturn(false);
-        when(sequenceGenerator.generateRegistrationId()).thenReturn("R-000000000016");
+        when(sequenceGenerator.generateRegistrationId()).thenReturn("R-0000000016");
         when(registrationRepository.save(any(Registration.class))).thenAnswer(inv -> inv.getArgument(0));
 
         RegistrationResponse response = service.create(request);
 
         assertNotNull(response);
-        assertEquals("R-000000000016", response.getRegId());
+        assertEquals("R-0000000016", response.getRegId());
         assertEquals("PR", response.getRegStatus());
         assertEquals("Preparing", response.getRegStatusName());
         assertEquals("NW", response.getRegType());
@@ -135,7 +135,7 @@ class RegistrationServiceTest {
         request.setRegFeePaid(null);
         request.setTitleFeePaid(null);
         when(registrationRepository.existsByDealNumber(anyString())).thenReturn(false);
-        when(sequenceGenerator.generateRegistrationId()).thenReturn("R-000000000017");
+        when(sequenceGenerator.generateRegistrationId()).thenReturn("R-0000000017");
         when(registrationRepository.save(any(Registration.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.create(request);
@@ -151,7 +151,7 @@ class RegistrationServiceTest {
     void testCreate_storesLienHolderInfo() {
         RegistrationRequest request = buildRequest();
         when(registrationRepository.existsByDealNumber(anyString())).thenReturn(false);
-        when(sequenceGenerator.generateRegistrationId()).thenReturn("R-000000000018");
+        when(sequenceGenerator.generateRegistrationId()).thenReturn("R-0000000018");
         when(registrationRepository.save(any(Registration.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.create(request);
