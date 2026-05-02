@@ -11,7 +11,11 @@ COPY src ./src
 RUN mvn package -DskipTests -B
 
 # Stage 2: Runtime
-FROM eclipse-temurin:21-jre-alpine
+# Using glibc-based JRE (not Alpine/musl) because the Vertex AI Java SDK
+# depends on gRPC, whose native libraries (boringssl, conscrypt) are
+# compiled against glibc and SIGSEGV on musl. ~80 MiB larger image, but
+# reliable. Affects ALL agent calls when agent.provider=gemini.
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
