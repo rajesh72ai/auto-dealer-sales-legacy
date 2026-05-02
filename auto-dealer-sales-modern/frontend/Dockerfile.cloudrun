@@ -1,0 +1,25 @@
+# Cloud Run-compatible Dockerfile for the React frontend.
+# Builds a static bundle with Vite, then serves it via nginx.
+# nginx also reverse-proxies /api/* to the backend Cloud Run URL,
+# so the browser sees a single origin and no CORS is needed.
+
+# Stage 1: Build
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+COPY . .
+RUN npm run build
+
+# Stage 2: nginx static serve + /api proxy
+FROM nginx:1.27-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+COPY docker-entrypoint-cloudrun.sh /docker-entrypoint-cloudrun.sh
+RUN chmod +x /docker-entrypoint-cloudrun.sh
+
+ENV PORT=8080
+ENV BACKEND_URL=http://localhost:8480
+EXPOSE 8080
+
+CMD ["/docker-entrypoint-cloudrun.sh"]
