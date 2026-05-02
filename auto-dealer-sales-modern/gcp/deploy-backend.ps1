@@ -38,17 +38,22 @@ Write-Step "Deploying backend to Cloud Run service [$GcpBackendService]"
 $dbUrl = "jdbc:postgresql:///$GcpSqlDb`?cloudSqlInstance=$GcpInstanceConnectionName&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
 
 # CORS allow-list — must include the public frontend Cloud Run URL or browsers
-# get 403 on same-origin POSTs (they send Origin: <frontend-url> header on POST).
-# Look up the frontend URL if the service is already deployed; otherwise fall
-# back to the predictable Cloud Run pattern.
-$frontendUrl = gcloud run services describe $GcpFrontendService `
+# get 403 on POSTs (browsers attach `Origin: <frontend-url>` to every POST,
+# Spring's CorsFilter rejects unknown origins before any controller runs).
+#
+# Cloud Run gives a single service TWO URLs and either may appear as Origin:
+#   - new format:    https://<service>-<projectNumber>.<region>.run.app
+#   - legacy format: https://<service>-<hash>-<region>.a.run.app
+# `gcloud run services describe` returns the legacy format; the new format
+# must be computed. Include both to be safe.
+$projectNumber = gcloud projects describe $GcpProjectId --format='value(projectNumber)'
+$frontendUrlNew    = "https://$GcpFrontendService-$projectNumber.$GcpRegion.run.app"
+$frontendUrlLegacy = gcloud run services describe $GcpFrontendService `
     --project=$GcpProjectId --region=$GcpRegion --format='value(status.url)' 2>$null
-if ([string]::IsNullOrWhiteSpace($frontendUrl)) {
-    # First-deploy fallback — Cloud Run URL pattern is stable per project number
-    $projectNumber = gcloud projects describe $GcpProjectId --format='value(projectNumber)'
-    $frontendUrl = "https://$GcpFrontendService-$projectNumber.$GcpRegion.run.app"
-}
-$corsOrigins = "$frontendUrl,http://localhost:3004"
+$origins = @($frontendUrlNew, $frontendUrlLegacy, "http://localhost:3004") `
+    | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } `
+    | Select-Object -Unique
+$corsOrigins = $origins -join ','
 
 gcloud run deploy $GcpBackendService `
     --project=$GcpProjectId `
