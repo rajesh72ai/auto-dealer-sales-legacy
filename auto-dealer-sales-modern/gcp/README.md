@@ -3,6 +3,17 @@
 Lift-and-shift of the AUTOSALES modular monolith to Google Cloud Run + Cloud SQL.
 Phase A scope: **app + DB only, no AI**. Phase B re-enables AI via Vertex AI / Gemini.
 
+## Live URLs (deployed 2026-05-02)
+
+| Service | URL |
+|---|---|
+| Frontend (open this in a browser) | https://autosales-frontend-683448878661.us-central1.run.app |
+| Backend  | https://autosales-backend-683448878661.us-central1.run.app |
+| Login    | `ADMIN001` / `Admin123` (dealer DLR01) |
+
+The frontend nginx reverse-proxies `/api/*` to the backend, so the browser only
+sees one origin — no CORS configuration needed.
+
 ## Architecture
 
 ```
@@ -100,12 +111,44 @@ $frontend = gcloud run services describe autosales-frontend --region=us-central1
 Start-Process $frontend
 ```
 
-## Tear down
+## Pause / resume Cloud SQL (cost optimization)
+
+Cloud SQL is the only resource that bills 24/7 (~$8-10/mo). Cloud Run scales
+to zero when idle and bills nothing. To save money on long pauses without
+losing data:
+
+```powershell
+./stop-sql.ps1   # ~30s; data preserved; cost drops to ~$1-2/mo (storage only)
+./start-sql.ps1  # ~30s; instance becomes RUNNABLE again
+```
+
+When SQL is stopped, the backend Cloud Run service can't connect — first request
+after restart will reconnect cleanly. Use this for overnight/weekend pauses.
+
+## Tear down (full cleanup)
 
 ```powershell
 ./teardown.ps1                          # drop Cloud Run + Cloud SQL (keep secrets + images)
 ./teardown.ps1 -AlsoSecrets -AlsoImages # full cleanup
 ```
+
+## Known issues (clean up before "production")
+
+These don't block the demo but are worth fixing if AUTOSALES on GCP becomes
+a real product:
+
+1. **TypeScript errors in registration/warranty pages** — ~30 type errors
+   (`label` not in `Column<T>`, missing `totalElements` prop, unused imports).
+   Production build skips `tsc` to ship; runtime is fine. Run `npm run typecheck`
+   in `frontend/` to surface them. Fix in a dedicated cleanup PR.
+2. **Cloud SQL on db-f1-micro** is fine for demo; for production traffic, bump
+   to `db-custom-2-7680` and enable HA (`--availability-type=regional`).
+3. **No min-instances** — first request after idle has a 1-3s cold start.
+   For client-facing demos, set `--min-instances=1` on the backend (~$15/mo).
+4. **Cloud SQL no automated backups** — disabled to save cost during demo.
+   Re-enable with `gcloud sql instances patch ... --backup-start-time=03:00`.
+5. **`--allow-unauthenticated`** on both Cloud Run services — anyone can hit
+   the URLs. For internal-only demos, switch to IAP (Identity-Aware Proxy).
 
 ## Differences from local Docker Compose stack
 
