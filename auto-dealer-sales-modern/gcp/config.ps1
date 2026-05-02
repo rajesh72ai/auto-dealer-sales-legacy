@@ -1,7 +1,12 @@
 # Shared config for all gcp/*.ps1 scripts.
 # Source this from each script: . $PSScriptRoot/config.ps1
 
-$ErrorActionPreference = 'Stop'
+# Note on error handling — PS 5.1 treats native-command stderr as halting
+# errors when ErrorActionPreference is 'Stop' (NativeCommandError). gcloud
+# writes informational status (e.g. "Listing items...") to stderr, which
+# triggers this. Keep at 'Continue' and check $LASTEXITCODE explicitly via
+# Assert-GcloudOk after critical writes.
+$ErrorActionPreference = 'Continue'
 
 $Global:GcpProjectId       = 'auto-sales-ai-enabled'
 $Global:GcpRegion          = 'us-central1'
@@ -33,4 +38,11 @@ function Write-Step {
 function Write-Done {
     param([string]$Message)
     Write-Host "    [done] $Message" -ForegroundColor Green
+}
+
+function Assert-GcloudOk {
+    param([string]$Description)
+    if ($LASTEXITCODE -ne 0) {
+        throw "gcloud failed: $Description (exit code $LASTEXITCODE)"
+    }
 }
