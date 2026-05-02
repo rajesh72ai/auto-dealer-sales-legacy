@@ -60,6 +60,7 @@ if ([string]::IsNullOrWhiteSpace($existingInstance)) {
     gcloud sql instances create $GcpSqlInstance `
         --project=$GcpProjectId `
         --database-version=$GcpSqlVersion `
+        --edition=$GcpSqlEdition `
         --tier=$GcpSqlTier `
         --region=$GcpRegion `
         --root-password=$rootPassword `

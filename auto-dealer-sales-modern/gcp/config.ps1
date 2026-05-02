@@ -13,6 +13,7 @@ $Global:GcpRegion          = 'us-central1'
 $Global:GcpArRepo          = 'autosales'
 $Global:GcpSqlInstance     = 'autosales-pg'
 $Global:GcpSqlTier         = 'db-f1-micro'
+$Global:GcpSqlEdition      = 'ENTERPRISE'   # ENTERPRISE_PLUS is gcloud's new default but doesn't support shared-core tiers
 $Global:GcpSqlVersion      = 'POSTGRES_16'
 $Global:GcpSqlDb           = 'autosales'
 $Global:GcpSqlUser         = 'autosales'
