@@ -52,7 +52,7 @@ gcloud auth configure-docker $GcpArHost --quiet | Out-Null
 # --------------------------------------------------------------------
 # 3. Cloud SQL instance (Postgres 16, db-f1-micro, ~$8-10/mo)
 # --------------------------------------------------------------------
-Write-Step "Creating Cloud SQL Postgres instance [$GcpSqlInstance] (~5-7 min)"
+Write-Step "Creating Cloud SQL Postgres instance [$GcpSqlInstance] -- 5 to 15 min"
 $existingInstance = gcloud sql instances list --project=$GcpProjectId `
     --filter="name=$GcpSqlInstance" --format="value(name)"
 if ([string]::IsNullOrWhiteSpace($existingInstance)) {
