@@ -98,19 +98,11 @@ if ([string]::IsNullOrWhiteSpace($existingUser)) {
         --password=$dbPassword
     Assert-GcloudOk "create DB user"
 
-    # Store the password we just generated in Secret Manager
+    # Store the password we just generated in Secret Manager. Use Set-SecretValue
+    # (writes via temp file) — piping with `$x | gcloud --data-file=-` appends a
+    # CRLF on PowerShell, which corrupts the password and breaks DB auth.
     Write-Step "Storing DB password in Secret Manager [$GcpDbPasswordName]"
-    $existingSecret = gcloud secrets list --project=$GcpProjectId `
-        --filter="name~/$GcpDbPasswordName$" --format="value(name)"
-    if ([string]::IsNullOrWhiteSpace($existingSecret)) {
-        $dbPassword | gcloud secrets create $GcpDbPasswordName `
-            --project=$GcpProjectId --data-file=- --replication-policy=automatic
-        Assert-GcloudOk "create DB password secret"
-    } else {
-        $dbPassword | gcloud secrets versions add $GcpDbPasswordName `
-            --project=$GcpProjectId --data-file=-
-        Assert-GcloudOk "add DB password version"
-    }
+    Set-SecretValue -SecretName $GcpDbPasswordName -Value $dbPassword -ProjectId $GcpProjectId
     Write-Done "DB user created and password stored"
 } else {
     Write-Done "DB user already exists — assuming password is in Secret Manager"
@@ -127,9 +119,7 @@ if ([string]::IsNullOrWhiteSpace($existingJwt)) {
     $bytes = New-Object byte[] 64
     [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
     $jwt = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''
-    $jwt | gcloud secrets create $GcpJwtSecretName `
-        --project=$GcpProjectId --data-file=- --replication-policy=automatic
-    Assert-GcloudOk "create JWT secret"
+    Set-SecretValue -SecretName $GcpJwtSecretName -Value $jwt -ProjectId $GcpProjectId
     Write-Done "JWT secret created"
 } else {
     Write-Done "JWT secret already exists — skipping"

@@ -47,3 +47,28 @@ function Assert-GcloudOk {
         throw "gcloud failed: $Description (exit code $LASTEXITCODE)"
     }
 }
+
+# Write a string to Secret Manager as exact bytes (no PowerShell-added newline).
+# `$value | gcloud secrets ... --data-file=-` appends a CRLF on Windows, which
+# corrupts secrets like passwords. Use a temp file with WriteAllText to avoid it.
+function Set-SecretValue {
+    param(
+        [Parameter(Mandatory)] [string]$SecretName,
+        [Parameter(Mandatory)] [string]$Value,
+        [Parameter(Mandatory)] [string]$ProjectId
+    )
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    [System.IO.File]::WriteAllText($tempFile, $Value)
+    try {
+        $existing = gcloud secrets list --project=$ProjectId --filter="name~/$SecretName$" --format="value(name)"
+        if ([string]::IsNullOrWhiteSpace($existing)) {
+            gcloud secrets create $SecretName --project=$ProjectId --data-file=$tempFile --replication-policy=automatic
+            Assert-GcloudOk "create secret $SecretName"
+        } else {
+            gcloud secrets versions add $SecretName --project=$ProjectId --data-file=$tempFile
+            Assert-GcloudOk "add version to secret $SecretName"
+        }
+    } finally {
+        Remove-Item $tempFile -Force
+    }
+}
