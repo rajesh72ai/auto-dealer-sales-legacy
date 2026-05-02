@@ -11,7 +11,9 @@ import com.google.cloud.vertexai.api.Tool;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import com.google.protobuf.Struct;
-import com.google.protobuf.Value;
+// NOTE: Don't `import com.google.protobuf.Value` — it would clash with
+// Spring's `org.springframework.beans.factory.annotation.Value` annotation
+// used on constructor parameters. Use the fully qualified name inline.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -167,7 +169,7 @@ public class VertexAiGeminiClient {
                                     .setFunctionResponse(FunctionResponse.newBuilder()
                                             .setName(toolName)
                                             .setResponse(Struct.newBuilder()
-                                                    .putFields("result", Value.newBuilder()
+                                                    .putFields("result", com.google.protobuf.Value.newBuilder()
                                                             .setStringValue(toolResult).build())
                                                     .build())
                                             .build())
@@ -197,8 +199,8 @@ public class VertexAiGeminiClient {
     private Map<String, Object> structToMap(Struct struct) {
         Map<String, Object> out = new LinkedHashMap<>();
         if (struct == null) return out;
-        for (Map.Entry<String, Value> entry : struct.getFieldsMap().entrySet()) {
-            Value v = entry.getValue();
+        for (Map.Entry<String, com.google.protobuf.Value> entry : struct.getFieldsMap().entrySet()) {
+            com.google.protobuf.Value v = entry.getValue();
             switch (v.getKindCase()) {
                 case STRING_VALUE -> out.put(entry.getKey(), v.getStringValue());
                 case NUMBER_VALUE -> {
