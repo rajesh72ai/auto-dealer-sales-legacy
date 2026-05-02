@@ -37,6 +37,19 @@ Write-Step "Deploying backend to Cloud Run service [$GcpBackendService]"
 # as a fast path), but the socket factory works with or without it.
 $dbUrl = "jdbc:postgresql:///$GcpSqlDb`?cloudSqlInstance=$GcpInstanceConnectionName&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
 
+# CORS allow-list — must include the public frontend Cloud Run URL or browsers
+# get 403 on same-origin POSTs (they send Origin: <frontend-url> header on POST).
+# Look up the frontend URL if the service is already deployed; otherwise fall
+# back to the predictable Cloud Run pattern.
+$frontendUrl = gcloud run services describe $GcpFrontendService `
+    --project=$GcpProjectId --region=$GcpRegion --format='value(status.url)' 2>$null
+if ([string]::IsNullOrWhiteSpace($frontendUrl)) {
+    # First-deploy fallback — Cloud Run URL pattern is stable per project number
+    $projectNumber = gcloud projects describe $GcpProjectId --format='value(projectNumber)'
+    $frontendUrl = "https://$GcpFrontendService-$projectNumber.$GcpRegion.run.app"
+}
+$corsOrigins = "$frontendUrl,http://localhost:3004"
+
 gcloud run deploy $GcpBackendService `
     --project=$GcpProjectId `
     --region=$GcpRegion `
@@ -51,7 +64,7 @@ gcloud run deploy $GcpBackendService `
     --concurrency=80 `
     --timeout=300 `
     --port=8080 `
-    --set-env-vars="SPRING_PROFILES_ACTIVE=gcp,DB_URL=$dbUrl,DB_USERNAME=$GcpSqlUser" `
+    --set-env-vars="^|^SPRING_PROFILES_ACTIVE=gcp|DB_URL=$dbUrl|DB_USERNAME=$GcpSqlUser|CORS_ALLOWED_ORIGINS=$corsOrigins" `
     --set-secrets="DB_PASSWORD=$GcpDbPasswordName`:latest,JWT_SECRET=$GcpJwtSecretName`:latest"
 
 Write-Done "Backend deployed"

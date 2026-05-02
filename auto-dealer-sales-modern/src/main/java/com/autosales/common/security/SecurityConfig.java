@@ -1,5 +1,6 @@
 package com.autosales.common.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,6 +26,12 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
+
+    // Comma-separated allow-list. Default keeps local Compose / OpenClaw flows
+    // working untouched; the gcp profile overrides via env var to add the
+    // production Cloud Run frontend URL.
+    @Value("${cors.allowed-origins:http://localhost:3004,http://localhost:18789}")
+    private String allowedOriginsCsv;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           ApiKeyAuthenticationFilter apiKeyAuthenticationFilter) {
@@ -65,7 +72,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3004", "http://localhost:18789"));
+        List<String> origins = java.util.Arrays.stream(allowedOriginsCsv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
