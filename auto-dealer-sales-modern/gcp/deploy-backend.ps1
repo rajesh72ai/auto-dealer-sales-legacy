@@ -17,11 +17,8 @@ try {
     gcloud builds submit `
         --project=$GcpProjectId `
         --region=$GcpRegion `
-        --tag=$GcpBackendImage `
-        --machine-type=e2-highcpu-8 `
-        --timeout=900s `
-        --config=$null `
-        -f Dockerfile.cloudrun `
+        --config=cloudbuild-cloudrun.yaml `
+        --substitutions=_IMAGE=$GcpBackendImage `
         .
 } finally {
     Pop-Location
