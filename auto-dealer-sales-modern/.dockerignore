@@ -1,0 +1,12 @@
+target/
+*.jar
+*.war
+.idea/
+.vscode/
+.DS_Store
+.git/
+.gitignore
+frontend/
+openclaw/
+.env
+.env.local

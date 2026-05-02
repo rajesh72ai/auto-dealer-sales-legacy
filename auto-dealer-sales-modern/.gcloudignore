@@ -1,0 +1,26 @@
+# Skip heavy / generated files for backend Cloud Build uploads.
+# Maven target/ alone can be 100+ MiB.
+
+target/
+*.jar
+*.war
+.idea/
+.vscode/
+.DS_Store
+.git/
+.gitignore
+
+# Frontend artifacts (we build frontend separately)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Local env
+.env
+.env.local
+
+# OpenClaw config (not part of backend image)
+openclaw/
+
+# Dev-only Dockerfile
+Dockerfile

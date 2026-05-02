@@ -20,6 +20,7 @@ try {
         --config=cloudbuild-cloudrun.yaml `
         --substitutions=_IMAGE=$GcpBackendImage `
         .
+    Assert-GcloudOk "Cloud Build (backend)"
 } finally {
     Pop-Location
 }

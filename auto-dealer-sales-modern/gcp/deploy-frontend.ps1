@@ -33,6 +33,7 @@ try {
         --config=cloudbuild-cloudrun.yaml `
         --substitutions=_IMAGE=$GcpFrontendImage `
         .
+    Assert-GcloudOk "Cloud Build (frontend)"
 } finally {
     Pop-Location
 }

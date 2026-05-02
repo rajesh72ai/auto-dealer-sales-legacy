@@ -1,0 +1,32 @@
+# Skip heavy / generated / sensitive files when uploading to Cloud Build.
+# Without this, `gcloud builds submit` uploads node_modules (~100 MiB) and
+# can fail with INTERNAL_ERROR or hit upload size limits.
+
+node_modules/
+dist/
+build/
+.cache/
+.vite/
+
+# Local env / secrets
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dev-only Dockerfile (we ship Dockerfile.cloudrun)
+Dockerfile
+
+# Misc
+.git/
+.gitignore
