@@ -30,8 +30,11 @@ Write-Done "Backend image pushed: $GcpBackendImage"
 # --------------------------------------------------------------------
 Write-Step "Deploying backend to Cloud Run service [$GcpBackendService]"
 
-# JDBC URL uses Unix socket mounted by Cloud Run when --add-cloudsql-instances is set
-$dbUrl = "jdbc:postgresql:///$GcpSqlDb`?host=/cloudsql/$GcpInstanceConnectionName"
+# JDBC URL uses the Cloud SQL Postgres Socket Factory library (added in pom.xml).
+# The library connects via the SA's IAM identity using the standard JDBC URL form
+# below. --add-cloudsql-instances on Cloud Run is still useful (mounts the socket
+# as a fast path), but the socket factory works with or without it.
+$dbUrl = "jdbc:postgresql:///$GcpSqlDb`?cloudSqlInstance=$GcpInstanceConnectionName&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
 
 gcloud run deploy $GcpBackendService `
     --project=$GcpProjectId `
