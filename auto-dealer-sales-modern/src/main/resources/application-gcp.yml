@@ -24,13 +24,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: false
 
-# AI surfaces are intentionally disabled in Phase A — Phase B will
-# reintroduce them via Vertex AI / Gemini. Empty keys cause the LlmClient
-# to skip provider registration and the AgentService /info to report
-# unavailable, so both widgets auto-hide in the UI.
+# AI surfaces — Phase B switches the agent to Vertex AI Gemini.
+# Custom-chat free-tier providers (groq/together/mistral) stay disabled here;
+# the AI Assistant widget auto-hides when its providers aren't configured.
+# OpenClaw stays disabled: agent.provider=gemini selects GeminiAgentService.
 groq:
-  api-key: ""
-gemini:
   api-key: ""
 together:
   api-key: ""
@@ -41,6 +39,18 @@ claude:
 openclaw:
   gateway-url: ""
   gateway-token: ""
+
+# Vertex AI Gemini — backend service account has roles/aiplatform.user;
+# auth via Application Default Credentials, no API key needed.
+# api-key is intentionally blank here because we use Vertex AI (project-based),
+# not Google AI Studio (api-key-based).
+agent:
+  provider: gemini
+gemini:
+  api-key: ""
+  project-id: ${GEMINI_PROJECT_ID}
+  location: ${GEMINI_LOCATION:us-central1}
+  model: ${GEMINI_MODEL:gemini-2.5-flash}
 
 logging:
   level:

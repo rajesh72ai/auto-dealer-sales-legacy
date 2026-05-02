@@ -36,9 +36,14 @@ groq:
   api-key: ${GROQ_API_KEY:}
   model: ${GROQ_MODEL:llama-3.3-70b-versatile}
 
+# Gemini config — shared between chat module (LlmClient uses gemini.api-key
+# for the Google AI Studio endpoint) and agent module (VertexAiGeminiClient
+# uses gemini.project-id for Vertex AI). The same model id works for both.
 gemini:
   api-key: ${GEMINI_API_KEY:}
   model: ${GEMINI_MODEL:gemini-2.5-flash}
+  project-id: ${GEMINI_PROJECT_ID:}
+  location: ${GEMINI_LOCATION:us-central1}
 
 together:
   api-key: ${TOGETHER_API_KEY:}
@@ -60,6 +65,10 @@ llm:
   default-provider: ${LLM_DEFAULT_PROVIDER:groq}
 
 agent:
+  # Selects the AgentService implementation. Default 'openclaw' keeps the
+  # local docker-compose stack on master untouched. The gcp profile sets
+  # 'gemini' to route through Vertex AI / GeminiAgentService.
+  provider: ${AGENT_PROVIDER:openclaw}
   default-skill: autosales-api
   max-rounds: 20
   timeout-seconds: 180

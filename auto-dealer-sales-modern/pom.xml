@@ -75,6 +75,17 @@
             <version>1.20.0</version>
         </dependency>
 
+        <!-- Vertex AI Gemini SDK — used by the gcp profile's GeminiAgentService.
+             Authenticated via Application Default Credentials (Cloud Run's
+             service account identity). On the local Compose stack this dep is
+             still in the JAR but unused; agent.provider=openclaw selects the
+             OpenClawAgentService instead. -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-vertexai</artifactId>
+            <version>1.13.0</version>
+        </dependency>
+
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

@@ -69,7 +69,7 @@ gcloud run deploy $GcpBackendService `
     --concurrency=80 `
     --timeout=300 `
     --port=8080 `
-    --set-env-vars="^|^SPRING_PROFILES_ACTIVE=gcp|DB_URL=$dbUrl|DB_USERNAME=$GcpSqlUser|CORS_ALLOWED_ORIGINS=$corsOrigins" `
+    --set-env-vars="^|^SPRING_PROFILES_ACTIVE=gcp|DB_URL=$dbUrl|DB_USERNAME=$GcpSqlUser|CORS_ALLOWED_ORIGINS=$corsOrigins|GEMINI_PROJECT_ID=$GcpProjectId|GEMINI_LOCATION=$GcpRegion" `
     --set-secrets="DB_PASSWORD=$GcpDbPasswordName`:latest,JWT_SECRET=$GcpJwtSecretName`:latest"
 
 Write-Done "Backend deployed"
