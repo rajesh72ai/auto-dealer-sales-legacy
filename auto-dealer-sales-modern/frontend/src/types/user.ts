@@ -10,6 +10,10 @@ export interface SystemUserInfo {
   lastLoginTs: string | null;
   createdTs: string;
   updatedTs: string;
+  // AI agent policy (B-tokenadmin)
+  agentEnabled?: boolean;            // when false, agent endpoint is forbidden for this user
+  agentDailyTokenQuota?: number | null;  // null = use system default
+  agentNotes?: string | null;
 }
 
 /** Request payload for creating a new user */
@@ -20,6 +24,10 @@ export interface CreateUserRequest {
   userType: string;
   dealerCode: string;
   activeFlag: string;
+  // AI agent policy
+  agentEnabled?: boolean;
+  agentDailyTokenQuota?: number | null;
+  agentNotes?: string | null;
 }
 
 /** Request payload for updating an existing user (no password field) */
@@ -28,4 +36,8 @@ export interface UpdateUserRequest {
   userType: string;
   dealerCode: string;
   activeFlag: string;
+  // AI agent policy
+  agentEnabled?: boolean;
+  agentDailyTokenQuota?: number | null;
+  agentNotes?: string | null;
 }

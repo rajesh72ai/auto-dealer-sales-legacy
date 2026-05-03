@@ -52,4 +52,24 @@ public class SystemUser {
 
     @Column(name = "updated_ts")
     private LocalDateTime updatedTs;
+
+    /**
+     * Per-user override of the global agent token quota. NULL means use the
+     * system default ({@code agent.token-quota.daily-default}). Set to a
+     * specific number to give this user a custom daily allowance.
+     */
+    @Column(name = "agent_daily_token_quota")
+    private Integer agentDailyTokenQuota;
+
+    /**
+     * When false, the AI agent is disabled for this user — calls to the
+     * agent endpoint return "Agent access disabled" without consuming any
+     * quota. Default true (agent allowed).
+     */
+    @Column(name = "agent_enabled")
+    private Boolean agentEnabled;
+
+    /** Free-text admin note explaining the agent policy for this user. */
+    @Column(name = "agent_notes", length = 200)
+    private String agentNotes;
 }

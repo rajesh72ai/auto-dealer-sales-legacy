@@ -67,6 +67,9 @@ const defaultCreateForm: CreateUserRequest = {
   userType: 'S',
   dealerCode: '',
   activeFlag: 'Y',
+  agentEnabled: true,
+  agentDailyTokenQuota: null,
+  agentNotes: '',
 };
 
 const defaultEditForm: UpdateUserRequest = {
@@ -74,6 +77,9 @@ const defaultEditForm: UpdateUserRequest = {
   userType: 'S',
   dealerCode: '',
   activeFlag: 'Y',
+  agentEnabled: true,
+  agentDailyTokenQuota: null,
+  agentNotes: '',
 };
 
 function UserManagementPage() {
@@ -204,6 +210,9 @@ function UserManagementPage() {
       userType: user.userType,
       dealerCode: user.dealerCode,
       activeFlag: user.activeFlag,
+      agentEnabled: user.agentEnabled !== false,    // default true if backend hasn't migrated yet
+      agentDailyTokenQuota: user.agentDailyTokenQuota ?? null,
+      agentNotes: user.agentNotes ?? '',
     });
     setEditErrors({});
     setIsEditOpen(true);
@@ -245,6 +254,40 @@ function UserManagementPage() {
       key: 'lockedFlag',
       header: 'Locked',
       render: (row) => <FlagBadge value={row.lockedFlag === 'Y' ? 'N' : 'Y'} yesLabel="Unlocked" noLabel="Locked" />,
+    },
+    {
+      key: 'agent',
+      header: 'AI Access',
+      render: (row) => {
+        const enabled = row.agentEnabled !== false;
+        const override = row.agentDailyTokenQuota;
+        if (!enabled) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200">
+              ✕ Disabled
+            </span>
+          );
+        }
+        if (override === 0) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
+              0 tokens/day
+            </span>
+          );
+        }
+        if (override != null) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200">
+              {override.toLocaleString()} /day
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            ✓ Default
+          </span>
+        );
+      },
     },
     {
       key: 'lastLoginTs',
@@ -380,6 +423,54 @@ function UserManagementPage() {
               options={ACTIVE_OPTIONS}
             />
           </div>
+
+          {/* AI Agent access policy section */}
+          <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-violet-800">
+              AI Agent Access
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                label="AI Access"
+                name="agentEnabled"
+                type="select"
+                value={createForm.agentEnabled === false ? 'false' : 'true'}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, agentEnabled: e.target.value === 'true' }))
+                }
+                options={[
+                  { value: 'true', label: 'Enabled' },
+                  { value: 'false', label: 'Disabled (no AI)' },
+                ]}
+              />
+              <FormField
+                label="Daily Token Quota"
+                name="agentDailyTokenQuota"
+                type="number"
+                value={createForm.agentDailyTokenQuota ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    agentDailyTokenQuota: v === '' ? null : Number(v),
+                  }));
+                }}
+                placeholder="System default"
+              />
+              <FormField
+                label="Admin Notes"
+                name="agentNotes"
+                value={createForm.agentNotes ?? ''}
+                onChange={handleCreateChange}
+                placeholder="(optional)"
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] italic text-violet-700/80">
+              Daily quota blank = uses system default. Set to 0 to allow login without any AI usage.
+              "Disabled" blocks the agent endpoint entirely.
+            </p>
+          </div>
+
           <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
             <button
               type="button"
@@ -440,6 +531,54 @@ function UserManagementPage() {
               options={ACTIVE_OPTIONS}
             />
           </div>
+
+          {/* AI Agent access policy section */}
+          <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-violet-800">
+              AI Agent Access
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                label="AI Access"
+                name="agentEnabled"
+                type="select"
+                value={editForm.agentEnabled === false ? 'false' : 'true'}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, agentEnabled: e.target.value === 'true' }))
+                }
+                options={[
+                  { value: 'true', label: 'Enabled' },
+                  { value: 'false', label: 'Disabled (no AI)' },
+                ]}
+              />
+              <FormField
+                label="Daily Token Quota"
+                name="agentDailyTokenQuota"
+                type="number"
+                value={editForm.agentDailyTokenQuota ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setEditForm((prev) => ({
+                    ...prev,
+                    agentDailyTokenQuota: v === '' ? null : Number(v),
+                  }));
+                }}
+                placeholder="System default"
+              />
+              <FormField
+                label="Admin Notes"
+                name="agentNotes"
+                value={editForm.agentNotes ?? ''}
+                onChange={handleEditChange}
+                placeholder="(optional)"
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] italic text-violet-700/80">
+              Daily quota blank = uses system default. Set to 0 to allow login without any AI usage.
+              "Disabled" blocks the agent endpoint entirely.
+            </p>
+          </div>
+
           <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
             <button
               type="button"

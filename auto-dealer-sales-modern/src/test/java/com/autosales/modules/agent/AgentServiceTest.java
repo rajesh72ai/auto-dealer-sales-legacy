@@ -48,7 +48,7 @@ class AgentServiceTest {
         ctx.setAuthentication(new UsernamePasswordAuthenticationToken("ADMIN001", "x", List.of()));
         SecurityContextHolder.setContext(ctx);
         lenient().when(quotaService.check(anyString()))
-                .thenReturn(new TokenQuotaService.QuotaCheck(true, 0, 200000));
+                .thenReturn(new TokenQuotaService.QuotaCheck(true, 0, 200000, false));
         lenient().when(costService.computeTurn(anyInt(), anyInt()))
                 .thenReturn(new AgentCostService.TurnCost(
                         0, 0, 0,
@@ -189,7 +189,7 @@ class AgentServiceTest {
         when(openClawClient.isConfigured()).thenReturn(true);
         when(openClawClient.getModel()).thenReturn("anthropic/claude-sonnet-4-6");
         when(quotaService.check("ADMIN001"))
-                .thenReturn(new TokenQuotaService.QuotaCheck(false, 250000, 200000));
+                .thenReturn(new TokenQuotaService.QuotaCheck(false, 250000, 200000, false));
 
         AgentResponse resp = agentService.invoke(
                 new AgentRequest(null, null, null, "hi"));

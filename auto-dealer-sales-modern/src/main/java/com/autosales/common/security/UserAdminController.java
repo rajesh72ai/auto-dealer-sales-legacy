@@ -80,6 +80,10 @@ public class UserAdminController {
                 .activeFlag((String) request.getOrDefault("activeFlag", "Y"))
                 .failedAttempts(0)
                 .lockedFlag("N")
+                // AI agent policy (B-tokenadmin) — defaults: agent enabled, no override
+                .agentEnabled(toBool(request.get("agentEnabled"), true))
+                .agentDailyTokenQuota(toInteger(request.get("agentDailyTokenQuota")))
+                .agentNotes((String) request.get("agentNotes"))
                 .createdTs(LocalDateTime.now())
                 .updatedTs(LocalDateTime.now())
                 .build();
@@ -100,6 +104,10 @@ public class UserAdminController {
         if (request.containsKey("userType")) user.setUserType((String) request.get("userType"));
         if (request.containsKey("dealerCode")) user.setDealerCode((String) request.get("dealerCode"));
         if (request.containsKey("activeFlag")) user.setActiveFlag((String) request.get("activeFlag"));
+        // AI agent policy (B-tokenadmin)
+        if (request.containsKey("agentEnabled")) user.setAgentEnabled(toBool(request.get("agentEnabled"), true));
+        if (request.containsKey("agentDailyTokenQuota")) user.setAgentDailyTokenQuota(toInteger(request.get("agentDailyTokenQuota")));
+        if (request.containsKey("agentNotes")) user.setAgentNotes((String) request.get("agentNotes"));
         user.setUpdatedTs(LocalDateTime.now());
 
         SystemUser saved = systemUserRepository.save(user);
@@ -136,6 +144,26 @@ public class UserAdminController {
         SystemUser saved = systemUserRepository.save(user);
         log.info("Unlocked user: {}", userId);
         return new ApiResponse<>("success", "User unlocked", saved, LocalDateTime.now());
+    }
+
+    /**
+     * Coerces a request value to Boolean. JSON booleans come through as
+     * {@code java.lang.Boolean}; some clients send strings. {@code null}
+     * returns the supplied default.
+     */
+    private static Boolean toBool(Object o, boolean dflt) {
+        if (o == null) return dflt;
+        if (o instanceof Boolean b) return b;
+        return Boolean.parseBoolean(o.toString().trim());
+    }
+
+    /** Coerces a request value to Integer; null/blank → null (use system default). */
+    private static Integer toInteger(Object o) {
+        if (o == null) return null;
+        if (o instanceof Number n) return n.intValue();
+        String s = o.toString().trim();
+        if (s.isEmpty()) return null;
+        try { return Integer.parseInt(s); } catch (NumberFormatException nfe) { return null; }
     }
 
     @PostMapping("/{userId}/lock")

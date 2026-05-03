@@ -64,7 +64,7 @@ class GeminiAgentServiceTest {
         lenient().when(client.isConfigured()).thenReturn(true);
         lenient().when(client.getDisplayModel()).thenReturn("google/gemini-2.5-flash");
         lenient().when(quotaService.check(anyString()))
-                .thenReturn(new TokenQuotaService.QuotaCheck(true, 0, 200000));
+                .thenReturn(new TokenQuotaService.QuotaCheck(true, 0, 200000, false));
         lenient().when(costService.computeTurn(anyInt(), anyInt()))
                 .thenReturn(new AgentCostService.TurnCost(
                         10, 5, 15,
