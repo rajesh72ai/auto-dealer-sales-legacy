@@ -39,13 +39,14 @@ public class CreateLeadHandler implements ActionHandler {
     @Override
     public String payloadSchemaHint() {
         return """
-                  - customerId (required, INTEGER — must reference an EXISTING customer; resolve via list_customers first)
+                  - customerId (required, INTEGER — must reference an EXISTING customer; resolve via list_customers/find_customer first)
                   - dealerCode (required, max 5 chars; defaults to caller's dealer if omitted)
-                  - leadSource (required, one of: WALK_IN, PHONE, WEB, REFERRAL)
-                  - interestModel (optional, vehicle model the customer is interested in)
-                  - interestYear (optional, integer year)
+                  - leadSource (required, EXACTLY 3 uppercase letters — one of: WEB (web inquiry), WLK (walk-in), REF (referral), ADV (advertisement), PHN (phone). Do NOT pass long forms like "REFERRAL" or "WALK_IN" — they will be rejected by validation.)
+                  - interestModel (optional, max 6 chars — internal model code like "F150XL")
+                  - interestYear (optional, integer year e.g. 2026)
                   - followUpDate (optional, YYYY-MM-DD)
-                  - assignedSales (optional, salesperson user id; defaults to caller)""";
+                  - assignedSales (optional, max 8 chars, salesperson user id; defaults to caller)
+                  - notes (optional, max 200 chars)""";
     }
 
     @Override
