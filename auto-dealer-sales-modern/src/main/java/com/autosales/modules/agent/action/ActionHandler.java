@@ -67,4 +67,24 @@ public interface ActionHandler {
     default java.util.List<Prerequisite> prerequisites() {
         return java.util.List.of();
     }
+
+    /**
+     * A human-readable schema describing the payload this action accepts.
+     * Surfaced in the Gemini system prompt so the LLM knows the exact field
+     * names and constraints to gather from the user (B-prereq follow-up).
+     *
+     * <p>Format convention — bullet list per line, each line:
+     * {@code   - fieldName (required|optional, type/format hint)}.
+     *
+     * <p>Without this, the LLM has to infer field shapes from prose and
+     * frequently sends unstructured strings (e.g. address as one field
+     * instead of addressLine1+city+stateCode+zipCode), producing avoidable
+     * propose-error rejections.
+     *
+     * <p>Default: empty string — the framework falls back to "no schema
+     * surfaced" and the LLM guesses, which is the legacy behavior.
+     */
+    default String payloadSchemaHint() {
+        return "";
+    }
 }

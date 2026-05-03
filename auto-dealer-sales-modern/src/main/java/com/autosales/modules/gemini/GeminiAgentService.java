@@ -69,11 +69,12 @@ public class GeminiAgentService implements AgentService {
 
             ## Read tools (function calling)
 
-            You have access to the following read-only tools, which you may call
-            via native function calling for any factual question — never invent
-            data:
-
-            %READ_TOOLS%
+            You have access to many read-only tools (see the function
+            declarations attached to this turn). USE THEM for any factual
+            question — never invent data. The catalog covers dealers,
+            vehicles, customers, deals, leads, finance applications, stock,
+            warranty, recalls, batch reports, calculators, and federal data
+            (NHTSA recalls + vPIC VIN decode).
 
             ### Entity-lookup rule (IMPORTANT)
             When the user names a specific entity (a customer, deal, vehicle, lead,
@@ -108,6 +109,19 @@ public class GeminiAgentService implements AgentService {
 
             If the caller's role does not permit a requested write, politely
             decline and name the role required — do not emit the marker.
+
+            ### Asking the user for missing data (IMPORTANT)
+            When you need data from the user to satisfy a write tool, ALWAYS:
+              1. Quote the EXACT field names from the payload schema above
+                 (e.g. addressLine1, stateCode, cellPhone — not "address" or
+                 "phone").
+              2. Mention the format constraints (e.g. "stateCode must be 2
+                 uppercase letters like MI, not Michigan"; "cellPhone is 10
+                 digits with no dashes").
+              3. List one field per line so the user can fill them in clearly.
+              4. After the user replies, map their input back to those exact
+                 field names in the payload — never collapse 'addressLine1,
+                 city, stateCode, zipCode' into a single 'address' string.
 
             ### Pre-requisites for writes (machine-enforced)
             Many writes require references to existing entities (e.g.,
@@ -389,6 +403,19 @@ public class GeminiAgentService implements AgentService {
                 writeList.append("any");
             }
             writeList.append(") — ").append(handler.endpointDescriptor()).append("\n");
+            // Surface payload schema hints so the LLM knows the exact field
+            // names + constraints — eliminates the "address as one string"
+            // class of validation errors and lets the LLM ask the user for
+            // structured data using the right field names.
+            String schema = handler.payloadSchemaHint();
+            if (schema != null && !schema.isBlank()) {
+                writeList.append("    payload schema:\n");
+                // Indent nested for readability; each line of the hint already
+                // starts with "  - " so we add one more level.
+                for (String line : schema.split("\n")) {
+                    writeList.append("    ").append(line).append("\n");
+                }
+            }
         });
         return SYSTEM_INSTRUCTION_TEMPLATE
                 .replace("%READ_TOOLS%", readToolList.isBlank() ? "(none registered)" : readToolList)

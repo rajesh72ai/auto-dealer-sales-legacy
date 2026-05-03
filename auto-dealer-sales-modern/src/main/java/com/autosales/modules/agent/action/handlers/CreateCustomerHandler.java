@@ -44,6 +44,22 @@ public class CreateCustomerHandler implements ActionHandler {
     @Override public boolean reversible() { return true; }
 
     @Override
+    public String payloadSchemaHint() {
+        return """
+                  - firstName (required, max 30 chars)
+                  - lastName (required, max 30 chars)
+                  - addressLine1 (required, max 50 chars — street number + name, e.g. "123 Main Street")
+                  - city (required, max 30 chars)
+                  - stateCode (required, EXACTLY 2 uppercase letters — e.g. "MI" not "Michigan")
+                  - zipCode (required, max 10 chars)
+                  - cellPhone (optional, exactly 10 digits, NO punctuation — e.g. "2485559999" not "248-555-9999")
+                  - email (optional, valid email)
+                  - customerType (optional, defaults to "I" for Individual; "B"=Business, "F"=Fleet)
+                  - dealerCode (optional, defaults to caller's dealer)
+                When asking the user for these fields, list them by EXACT name above so they can supply each one separately.""";
+    }
+
+    @Override
     @Transactional(rollbackFor = DryRunRollback.class)
     public ImpactPreview dryRun(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
         CustomerRequest req = toRequest(payload, user);

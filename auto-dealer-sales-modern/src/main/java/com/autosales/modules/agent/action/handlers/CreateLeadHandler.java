@@ -37,6 +37,18 @@ public class CreateLeadHandler implements ActionHandler {
     @Override public boolean reversible() { return true; }
 
     @Override
+    public String payloadSchemaHint() {
+        return """
+                  - customerId (required, INTEGER — must reference an EXISTING customer; resolve via list_customers first)
+                  - dealerCode (required, max 5 chars; defaults to caller's dealer if omitted)
+                  - leadSource (required, one of: WALK_IN, PHONE, WEB, REFERRAL)
+                  - interestModel (optional, vehicle model the customer is interested in)
+                  - interestYear (optional, integer year)
+                  - followUpDate (optional, YYYY-MM-DD)
+                  - assignedSales (optional, salesperson user id; defaults to caller)""";
+    }
+
+    @Override
     public List<Prerequisite> prerequisites() {
         return List.of(new Prerequisite(
                 "customerId",                       // payload field gated
