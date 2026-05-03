@@ -60,6 +60,15 @@ public class SecurityConfig {
                                 "/api-docs/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        // MCP server (B4) and A2A agent card (B5) — public discovery
+                        // surfaces. MCP clients pass app credentials via the standard
+                        // Bearer/X-API-Key chain; A2A card is a static manifest. Neither
+                        // exposes write actions; reads route through the same
+                        // ToolExecutor → REST chain that already enforces our authz.
+                        .requestMatchers(
+                                "/mcp/**",
+                                "/.well-known/agent.json"
+                        ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
