@@ -71,16 +71,55 @@ public class NhtsaService {
             return cached.value();
         }
 
+        // NHTSA does not expose a "by VIN" recall endpoint — only by
+        // make/model/year. So we two-step:
+        //   1. Decode the VIN via vPIC to extract make, model, model year
+        //   2. Query /recalls/recallsByVehicle with those parameters
+        // This was a real bug surfaced 2026-05-03: the original
+        // /recalls/recallsByVin path returned AWS API Gateway's
+        // "Missing Authentication Token" 403 (i.e. route doesn't exist).
+        Map<String, Object> decoded = decodeVin(key);
+        String make = extractVPicVar(decoded, "Make");
+        String model = extractVPicVar(decoded, "Model");
+        String modelYear = extractVPicVar(decoded, "Model Year");
+
+        if (make == null || model == null || modelYear == null) {
+            log.warn("NHTSA recall lookup: vPIC decode missing make/model/year for VIN {} — skipping recall query", key);
+            Map<String, Object> body = Map.of(
+                    "count", 0,
+                    "results", java.util.List.of(),
+                    "info", "Could not decode this VIN sufficiently to query NHTSA recalls. "
+                            + "VIN may be invalid or vPIC returned partial data."
+            );
+            evictIfFull(recallCache);
+            recallCache.put(key, new CacheEntry<>(body, Instant.now().plus(CACHE_TTL)));
+            return body;
+        }
+
+        log.info("NHTSA recall lookup for VIN {} resolved to make={} model={} year={}",
+                key, make, model, modelYear);
+
         Map<String, Object> body;
         try {
+            final String fmake = make;
+            final String fmodel = model;
+            final String fyear = modelYear;
             body = client.get()
-                    .uri(uri -> uri.scheme("https").host("api.nhtsa.gov").path("/recalls/recallsByVin")
-                            .queryParam("vin", key).build())
+                    .uri(uri -> uri.scheme("https").host("api.nhtsa.gov")
+                            .path("/recalls/recallsByVehicle")
+                            .queryParam("make", fmake)
+                            .queryParam("model", fmodel)
+                            .queryParam("modelYear", fyear)
+                            .build())
                     .retrieve()
                     .body(Map.class);
             if (body == null) body = Map.of("count", 0, "results", java.util.List.of());
+            // Stamp metadata so the agent can articulate the resolution path
+            Map<String, Object> withMeta = new java.util.LinkedHashMap<>(body);
+            withMeta.put("vin_resolved_from", Map.of("vin", key, "make", make, "model", model, "modelYear", modelYear));
+            body = withMeta;
         } catch (Exception e) {
-            log.warn("NHTSA recalls call failed for VIN={}: {}", key, e.getMessage());
+            log.warn("NHTSA recallsByVehicle call failed for {}/{}/{}: {}", make, model, modelYear, e.getMessage());
             return Map.of("count", 0, "results", java.util.List.of(),
                     "error", "NHTSA service unavailable: " + e.getMessage());
         }
@@ -88,6 +127,29 @@ public class NhtsaService {
         evictIfFull(recallCache);
         recallCache.put(key, new CacheEntry<>(body, Instant.now().plus(CACHE_TTL)));
         return body;
+    }
+
+    /**
+     * Pull a single variable from a vPIC decode response. vPIC responses
+     * have shape {@code {"Results": [{"Variable": "Make", "Value": "FORD"}, ...]}}.
+     * Returns null if the variable is missing or its Value is blank.
+     */
+    @SuppressWarnings("unchecked")
+    private static String extractVPicVar(Map<String, Object> decoded, String varName) {
+        if (decoded == null) return null;
+        Object resultsObj = decoded.get("Results");
+        if (!(resultsObj instanceof java.util.List<?> results)) return null;
+        for (Object row : results) {
+            if (!(row instanceof Map<?, ?> r)) continue;
+            Object v = r.get("Variable");
+            if (varName.equals(String.valueOf(v))) {
+                Object val = r.get("Value");
+                if (val == null) return null;
+                String s = val.toString().trim();
+                return s.isEmpty() || "null".equalsIgnoreCase(s) ? null : s;
+            }
+        }
+        return null;
     }
 
     /**
