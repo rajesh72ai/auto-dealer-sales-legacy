@@ -144,6 +144,7 @@ const navGroups: NavGroupDef[] = [
       { label: 'Audit Log', path: '/admin/audit-log', icon: <ScrollText className={iconClass} />, roles: ['ADMIN'] },
       { label: 'AI Usage & Cost', path: '/admin/agent-usage', icon: <Sparkles className={iconClass} />, roles: ['ADMIN'] },
       { label: 'AI Tool-Call Trace', path: '/admin/agent-trace', icon: <Activity className={iconClass} />, roles: ['ADMIN', 'MANAGER'] },
+      { label: 'AI Analytics & Cost', path: '/admin/agent-analytics', icon: <BarChart3 className={iconClass} />, roles: ['ADMIN', 'MANAGER'] },
       { label: 'AI Capability Backlog', path: '/admin/capability-gaps', icon: <Lightbulb className={iconClass} />, roles: ['ADMIN'] },
       { label: 'Config', path: '/admin/config', icon: <Settings className={iconClass} />, roles: ['ADMIN'] },
     ],

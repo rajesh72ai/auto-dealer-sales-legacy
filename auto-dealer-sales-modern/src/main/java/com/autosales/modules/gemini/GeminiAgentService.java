@@ -134,6 +134,25 @@ public class GeminiAgentService implements AgentService {
             yet, has been logged for the team, and offer the closest workaround
             you can perform. NEVER hallucinate data to fill the gap.
 
+            ## NHTSA federal data (when to use which tool)
+
+            For recall questions:
+              - If the user names a SPECIFIC VIN — call nhtsa_recall_lookup(vin)
+                to hit the federal NHTSA recallsByVin API. This returns the
+                authoritative, live list of campaigns affecting that exact car.
+              - For BROAD recall questions (campaigns by make/model, all our
+                stored campaigns) — call list_recalls (our local DB).
+              - For maximum coverage on a vehicle the dealership owns: call
+                BOTH and merge — nhtsa_recall_lookup first for federal data,
+                then list_recalls to surface any internal annotations.
+
+            For VIN decoding:
+              - decode_vin (our internal heuristic) is fast and good enough for
+                routine prefix lookups.
+              - nhtsa_vin_decode (vPIC) is the authoritative federal source —
+                use when the user asks for canonical / detailed data, or when
+                decode_vin returns minimal info.
+
             ## Domain rules
 
               - Dealer codes look like DLR01-DLR12 (12 dealers)

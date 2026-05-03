@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Map;
 
@@ -24,6 +25,7 @@ class AgentToolCallAuditServiceTest {
 
     @Mock private AgentToolCallAuditRepository repo;
     @Spy  private ObjectMapper mapper = new ObjectMapper();
+    @Mock private ApplicationEventPublisher events;
     @InjectMocks private AgentToolCallAuditService service;
 
     private CurrentUserContext.Snapshot user;

@@ -142,6 +142,19 @@ public class ToolRegistry {
         register("get_incentive", "Get details of a specific incentive program by program code/id.",
                 props(required("programCode", "string", "Incentive program code or id, e.g. INC001")));
 
+        // --- NHTSA federal data (live external API) ---
+        register("nhtsa_recall_lookup",
+                "Look up active federal recall campaigns affecting a specific VIN. "
+                + "Hits NHTSA's recallsByVin API. Use this for VIN-specific recall questions; "
+                + "use list_recalls for broad campaigns recorded in our local DB.",
+                props(required("vin", "string", "17-character Vehicle Identification Number")));
+
+        register("nhtsa_vin_decode",
+                "Authoritative VIN decode via NHTSA's vPIC database. Returns make, model, "
+                + "year, body class, manufacturer plant, engine info, etc. Use this when "
+                + "decode_vin (our internal heuristic) is insufficient or you need canonical data.",
+                props(required("vin", "string", "17-character Vehicle Identification Number")));
+
         register("run_credit_check", "Run a credit check for a customer",
                 props(required("customerId", "integer", "Customer ID"),
                       required("dealerCode", "string", "Dealer code"),

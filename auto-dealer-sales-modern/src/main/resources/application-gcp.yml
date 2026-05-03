@@ -52,6 +52,22 @@ gemini:
   location: ${GEMINI_LOCATION:us-central1}
   model: ${GEMINI_MODEL:gemini-2.5-flash}
 
+# B3a + B3b — BigQuery analytics layer.
+# Activated only when analytics.bigquery.enabled=true. Audit rows mirror
+# async via @EventListener; cost dashboard reads Cloud Billing's BQ export.
+# Service account autosales-app needs roles/bigquery.dataEditor on the
+# autosales_analytics dataset and roles/bigquery.jobUser on the project.
+analytics:
+  bigquery:
+    enabled: ${BIGQUERY_ENABLED:true}
+    project-id: ${GEMINI_PROJECT_ID}
+    dataset: ${BIGQUERY_DATASET:autosales_analytics}
+    audit-table: ${BIGQUERY_AUDIT_TABLE:tool_call_audit}
+    # Empty until Cloud Billing → BQ export is enabled. Set to e.g.
+    # auto-sales-ai-enabled.billing_export.gcp_billing_export_v1_<billing_id>
+    billing-table: ${BIGQUERY_BILLING_TABLE:}
+    gemini-service-name: ${BIGQUERY_GEMINI_SERVICE:Vertex AI API}
+
 logging:
   level:
     root: INFO

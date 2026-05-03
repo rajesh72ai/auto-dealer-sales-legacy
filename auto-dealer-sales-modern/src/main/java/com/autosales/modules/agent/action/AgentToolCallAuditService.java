@@ -2,12 +2,14 @@ package com.autosales.modules.agent.action;
 
 import com.autosales.modules.agent.action.entity.AgentToolCallAudit;
 import com.autosales.modules.agent.action.repository.AgentToolCallAuditRepository;
+import com.autosales.modules.analytics.AgentAuditEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,24 @@ public class AgentToolCallAuditService {
 
     private final AgentToolCallAuditRepository repo;
     private final ObjectMapper mapper;
+    private final ApplicationEventPublisher events;
+
+    /**
+     * After every successful save, publish an {@link AgentAuditEvent} so the
+     * BigQuery analytics layer (B3b) can asynchronously mirror the row. The
+     * publish is intentionally synchronous; the listener in
+     * {@code BigQueryAnalyticsService} is {@code @Async} so the OLTP path
+     * doesn't wait on BigQuery. If no analytics bean is registered (e.g.
+     * local Compose) the event is simply dropped.
+     */
+    private AgentToolCallAudit publishAndReturn(AgentToolCallAudit saved) {
+        try {
+            events.publishEvent(new AgentAuditEvent(saved));
+        } catch (Exception ignored) {
+            // Event publication must never fail the audit write
+        }
+        return saved;
+    }
 
     @Value("${agent.action.undo-window-seconds:60}")
     private long undoWindowSeconds;
@@ -49,7 +69,7 @@ public class AgentToolCallAuditService {
                 .reversible(reversible)
                 .undone(false)
                 .build();
-        return repo.save(a);
+        return publishAndReturn(repo.save(a));
     }
 
     @Transactional
@@ -80,7 +100,7 @@ public class AgentToolCallAuditService {
                 .undoExpiresAt(reversible ? LocalDateTime.now().plusSeconds(undoWindowSeconds) : null)
                 .undone(false)
                 .build();
-        return repo.save(a);
+        return publishAndReturn(repo.save(a));
     }
 
     @Transactional
@@ -106,7 +126,7 @@ public class AgentToolCallAuditService {
                 .reversible(false)
                 .undone(false)
                 .build();
-        return repo.save(a);
+        return publishAndReturn(repo.save(a));
     }
 
     @Transactional
@@ -124,7 +144,7 @@ public class AgentToolCallAuditService {
                 .reversible(false)
                 .undone(false)
                 .build();
-        repo.save(a);
+        publishAndReturn(repo.save(a));
     }
 
     /**
@@ -162,7 +182,7 @@ public class AgentToolCallAuditService {
                 .reversible(false)
                 .undone(false)
                 .build();
-        return repo.save(a);
+        return publishAndReturn(repo.save(a));
     }
 
     private String toJson(Object o) {

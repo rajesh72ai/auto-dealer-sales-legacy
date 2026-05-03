@@ -105,6 +105,10 @@ public class ToolExecutor {
                         arg(args, "page", "0"), arg(args, "size", "20"));
                 case "get_incentive" -> get("/api/admin/incentives/%s", arg(args, "programCode"));
 
+                // NHTSA federal data (live external)
+                case "nhtsa_recall_lookup" -> get("/api/nhtsa/recalls?vin=%s", arg(args, "vin"));
+                case "nhtsa_vin_decode"    -> get("/api/nhtsa/decode?vin=%s", arg(args, "vin"));
+
                 // Capability Gap Logging (reusable across apps)
                 case "log_capability_gap" -> post("/api/capability-gaps", args);
 

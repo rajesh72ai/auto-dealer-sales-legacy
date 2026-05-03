@@ -86,6 +86,19 @@
             <version>1.13.0</version>
         </dependency>
 
+        <!-- BigQuery for analytics layer + cost dashboard (B3a + B3b).
+             Used to mirror agent_tool_call_audit rows for analytics queries
+             and to read Cloud Billing's BQ export for accurate $ per Gemini
+             call. Auth via Application Default Credentials (Cloud Run
+             runtime service account; needs roles/bigquery.dataEditor on the
+             autosales_analytics dataset and roles/bigquery.jobUser on the
+             project). On local Compose this dep is in the JAR but unused. -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-bigquery</artifactId>
+            <version>2.42.0</version>
+        </dependency>
+
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
