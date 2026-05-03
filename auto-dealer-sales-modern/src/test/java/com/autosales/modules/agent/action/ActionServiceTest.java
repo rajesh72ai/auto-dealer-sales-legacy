@@ -32,6 +32,7 @@ class ActionServiceTest {
     @Mock private AgentToolCallAuditService auditService;
     @Mock private CurrentUserContext userContext;
     @Spy  private ObjectMapper mapper = new ObjectMapper();
+    @Spy  private PrerequisiteResolver prerequisiteResolver = new PrerequisiteResolver();
     @InjectMocks private ActionService actionService;
 
     private CurrentUserContext.Snapshot adminSnap;

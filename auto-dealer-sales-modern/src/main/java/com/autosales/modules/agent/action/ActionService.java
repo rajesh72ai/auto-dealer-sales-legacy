@@ -3,6 +3,7 @@ package com.autosales.modules.agent.action;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ExecutionResult;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
+import com.autosales.modules.agent.action.dto.PrerequisiteGap;
 import com.autosales.modules.agent.action.dto.ProposalResponse;
 import com.autosales.modules.agent.action.entity.AgentActionProposal;
 import com.autosales.modules.agent.action.entity.AgentToolCallAudit;
@@ -32,6 +33,7 @@ public class ActionService {
     private final AgentToolCallAuditService auditService;
     private final CurrentUserContext userContext;
     private final ObjectMapper mapper;
+    private final PrerequisiteResolver prerequisiteResolver;
 
     @org.springframework.beans.factory.annotation.Value("${agent.action.undo-window-seconds:60}")
     private int undoWindowSeconds;
@@ -45,6 +47,23 @@ public class ActionService {
         ActionHandler handler = registry.require(toolName);
         enforceRole(handler, user);
         if (payload == null) payload = Map.of();
+
+        // B-prereq: short-circuit if the action has unmet prerequisites the
+        // framework can resolve. We don't run the dry-run yet (it would fail
+        // with a confusing validation error); instead we return a structured
+        // gap envelope so the frontend can collect the missing data and
+        // chain the satisfier action(s) before retrying the parent.
+        PrerequisiteGap gap = prerequisiteResolver.analyze(handler, payload);
+        if (gap != null) {
+            log.info("Prereq gap on {}: {} unmet field(s) — returning gap envelope",
+                    toolName, gap.getUnmet().size());
+            return ProposalResponse.builder()
+                    .toolName(toolName)
+                    .tier(handler.tier().getCode())
+                    .reversible(handler.reversible())
+                    .prerequisiteGap(gap)
+                    .build();
+        }
 
         ImpactPreview preview;
         try {

@@ -4,9 +4,12 @@ import com.autosales.common.security.UserRole;
 import com.autosales.modules.agent.action.ActionHandler;
 import com.autosales.modules.agent.action.CurrentUserContext;
 import com.autosales.modules.agent.action.PayloadValidator;
+import com.autosales.modules.agent.action.Prerequisite;
 import com.autosales.modules.agent.action.Tier;
 import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
+
+import java.util.List;
 import com.autosales.modules.customer.dto.LeadRequest;
 import com.autosales.modules.customer.dto.LeadResponse;
 import com.autosales.modules.customer.service.CustomerLeadService;
@@ -32,6 +35,20 @@ public class CreateLeadHandler implements ActionHandler {
     }
     @Override public String endpointDescriptor() { return "POST /api/leads"; }
     @Override public boolean reversible() { return true; }
+
+    @Override
+    public List<Prerequisite> prerequisites() {
+        return List.of(new Prerequisite(
+                "customerId",                       // payload field gated
+                "customer",                         // human-readable entity
+                "list_customers",                   // finder
+                "create_customer",                  // satisfier
+                "customerId",                       // result field on the new CustomerResponse
+                "Leads link to an existing customer record. If you don't already have one, "
+                + "we can create the customer first; you'll be asked to confirm both steps.",
+                List.of("firstName", "lastName", "phone", "addressLine1", "city", "stateCode", "zipCode")
+        ));
+    }
 
     @Override
     @Transactional(rollbackFor = DryRunRollback.class)

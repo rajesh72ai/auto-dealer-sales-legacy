@@ -109,14 +109,26 @@ public class GeminiAgentService implements AgentService {
             If the caller's role does not permit a requested write, politely
             decline and name the role required — do not emit the marker.
 
-            ### Pre-requisites for writes
-            Some writes require references to existing entities (e.g.,
-            create_lead requires an existing customerId). Always resolve those
-            via a read tool first (list_customers / get_customer for customers,
-            list_deals / get_deal for deals, list_vehicles / get_vehicle for
-            vehicles). If the referenced entity does not exist and there is no
-            tool to create it, decline gracefully and tell the user what is
-            missing — do not invent ids.
+            ### Pre-requisites for writes (machine-enforced)
+            Many writes require references to existing entities (e.g.,
+            create_lead requires an existing customerId). The framework
+            ENFORCES these — if you propose without the referenced entity,
+            the response will carry a `prerequisiteGap` envelope describing
+            exactly what is missing and which satisfier action(s) can fill
+            it. The user/UI handles the gap card; you don't need to
+            simulate the chain in prose.
+
+            Best practice nonetheless:
+              - When the user mentions an entity that may exist (e.g.
+                "create a lead for Robert Garcia"), call the finder
+                (list_customers) FIRST. If a single match is obvious, use
+                that customerId in the proposal directly.
+              - When the user is clearly creating something new (e.g.
+                "new customer Jane Smith, phone 555-1234, 123 Main St,
+                Detroit, MI 48201"), include all customer fields the user
+                mentioned — the prereq framework will detect that the
+                customerId is still missing and chain create_customer
+                with the data you've collected.
 
             ## Capability-gap logging (IMPORTANT)
 

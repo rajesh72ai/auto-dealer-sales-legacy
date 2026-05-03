@@ -52,4 +52,19 @@ public interface ActionHandler {
     default Map<String, Object> compensation(Map<String, Object> payload, Object executeResult) {
         return null;
     }
+
+    /**
+     * Declares the prerequisite entities this action depends on (B-prereq).
+     * For example, {@code create_lead} returns a single {@link Prerequisite}
+     * declaring that {@code customerId} must reference an existing customer
+     * and pointing at {@code list_customers} (finder) and
+     * {@code create_customer} (satisfier) so the framework can resolve gaps.
+     *
+     * <p>Default: empty list — most actions have no prerequisites that the
+     * framework needs to chain. Override only when the action references
+     * another entity that must exist or be created first.
+     */
+    default java.util.List<Prerequisite> prerequisites() {
+        return java.util.List.of();
+    }
 }
