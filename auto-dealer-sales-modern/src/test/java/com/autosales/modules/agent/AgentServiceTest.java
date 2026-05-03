@@ -38,7 +38,9 @@ class AgentServiceTest {
     @Mock private ActionService actionService;
     @Mock private CurrentUserContext userContext;
     @Spy  private ObjectMapper mapper = new ObjectMapper();
-    @InjectMocks private AgentService agentService;
+    // After B1 the concrete impl is OpenClawAgentService (the AgentService
+    // interface has multiple impls — Mockito @InjectMocks needs a concrete type).
+    @InjectMocks private OpenClawAgentService agentService;
 
     @BeforeEach
     void authAs() {

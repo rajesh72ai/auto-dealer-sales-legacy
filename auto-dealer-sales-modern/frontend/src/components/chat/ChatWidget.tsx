@@ -31,6 +31,7 @@ function ChatWidget() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [providersLoaded, setProvidersLoaded] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState('');
   const [modelLabel, setModelLabel] = useState('AI Assistant');
   const [cooldown, setCooldown] = useState(0);
@@ -58,17 +59,22 @@ function ChatWidget() {
   const cooldownSeconds: Record<string, number> = { groq: 20, mistral: 30 };
   const needsCooldown = selectedProvider in cooldownSeconds;
 
-  // Load available providers on mount
+  // Load available providers on mount. If none are configured (e.g. on the
+  // GCP profile where the free-tier providers are intentionally disabled),
+  // the widget hides itself completely so users don't see a non-functional
+  // chat icon. The AI Agent widget remains visible regardless.
   useEffect(() => {
     const token = sessionStorage.getItem('autosales_token');
-    getProviders(token).then((data) => {
-      setProviders(data.providers);
-      if (data.defaultProvider) {
-        setSelectedProvider(data.defaultProvider);
-        const def = data.providers.find((p) => p.key === data.defaultProvider);
-        if (def) setModelLabel(def.label);
-      }
-    });
+    getProviders(token)
+      .then((data) => {
+        setProviders(data.providers);
+        if (data.defaultProvider) {
+          setSelectedProvider(data.defaultProvider);
+          const def = data.providers.find((p) => p.key === data.defaultProvider);
+          if (def) setModelLabel(def.label);
+        }
+      })
+      .finally(() => setProvidersLoaded(true));
   }, []);
 
   const scrollToBottom = useCallback(() => {
@@ -206,6 +212,13 @@ function ChatWidget() {
       : size === 'expanded'
       ? 'Maximize to full screen'
       : 'Shrink to compact';
+
+  // Hide the AI Assistant widget entirely when no chat providers are
+  // configured (e.g. GCP profile). Avoids a confusing dead icon in the
+  // header. The AI Agent widget is independent and stays visible.
+  if (providersLoaded && providers.length === 0) {
+    return null;
+  }
 
   return (
     <>

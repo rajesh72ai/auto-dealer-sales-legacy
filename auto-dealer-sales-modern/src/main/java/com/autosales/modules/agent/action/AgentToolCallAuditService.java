@@ -127,6 +127,44 @@ public class AgentToolCallAuditService {
         repo.save(a);
     }
 
+    /**
+     * Records a read-only tool call (e.g., {@code list_deals}, {@code get_stock_aging})
+     * invoked by an agent during its function-calling loop. These do not flow through
+     * the propose/confirm framework — they're side-effect-free queries — but we still
+     * persist them so the admin trace UI can show the full tool-call timeline per
+     * conversation, and so analytics (tool-call frequency, latency p50/p95) can be
+     * computed downstream (B3b).
+     *
+     * <p>Tier is fixed to "R" (READ) and {@code proposal_token} is null since these
+     * calls don't go through the propose/confirm protocol.
+     */
+    @Transactional
+    public AgentToolCallAudit recordReadToolCall(CurrentUserContext.Snapshot user,
+                                                 String conversationId,
+                                                 String toolName,
+                                                 Object args,
+                                                 Object result,
+                                                 long elapsedMs,
+                                                 boolean errored) {
+        AgentToolCallAudit a = AgentToolCallAudit.builder()
+                .userId(user != null ? user.getUserId() : "anonymous")
+                .userRole(user != null ? user.roleCode() : null)
+                .dealerCode(user != null ? user.getDealerCode() : null)
+                .conversationId(conversationId)
+                .toolName(toolName)
+                .tier("R")
+                .payloadJson(toJson(args))
+                .responseJson(toJson(result))
+                .status(errored ? Status.FAILED.name() : Status.EXECUTED.name())
+                .httpStatus(errored ? 500 : 200)
+                .elapsedMs((int) Math.min(elapsedMs, Integer.MAX_VALUE))
+                .dryRun(false)
+                .reversible(false)
+                .undone(false)
+                .build();
+        return repo.save(a);
+    }
+
     private String toJson(Object o) {
         if (o == null) return null;
         try {

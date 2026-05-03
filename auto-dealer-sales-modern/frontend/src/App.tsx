@@ -54,6 +54,7 @@ import LotLocationsPage from './pages/admin/LotLocationsPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import AuditLogPage from './pages/admin/AuditLogPage';
 import AgentUsagePage from './pages/admin/AgentUsagePage';
+import AgentTracePage from './pages/admin/AgentTracePage';
 import CapabilityGapsPage from './pages/admin/CapabilityGapsPage';
 
 // Registration & Warranty pages (Wave 6)
@@ -142,6 +143,7 @@ function App() {
           <Route path="/admin/users" element={<UserManagementPage />} />
           <Route path="/admin/audit-log" element={<AuditLogPage />} />
           <Route path="/admin/agent-usage" element={<AgentUsagePage />} />
+          <Route path="/admin/agent-trace" element={<AgentTracePage />} />
           <Route path="/admin/capability-gaps" element={<CapabilityGapsPage />} />
         </Route>
       </Route>

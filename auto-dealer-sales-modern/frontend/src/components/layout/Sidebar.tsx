@@ -37,6 +37,7 @@ import {
   ScrollText,
   Sparkles,
   Lightbulb,
+  Activity,
 } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 
@@ -142,6 +143,7 @@ const navGroups: NavGroupDef[] = [
       { label: 'Users', path: '/admin/users', icon: <UserCog className={iconClass} />, roles: ['ADMIN'] },
       { label: 'Audit Log', path: '/admin/audit-log', icon: <ScrollText className={iconClass} />, roles: ['ADMIN'] },
       { label: 'AI Usage & Cost', path: '/admin/agent-usage', icon: <Sparkles className={iconClass} />, roles: ['ADMIN'] },
+      { label: 'AI Tool-Call Trace', path: '/admin/agent-trace', icon: <Activity className={iconClass} />, roles: ['ADMIN', 'MANAGER'] },
       { label: 'AI Capability Backlog', path: '/admin/capability-gaps', icon: <Lightbulb className={iconClass} />, roles: ['ADMIN'] },
       { label: 'Config', path: '/admin/config', icon: <Settings className={iconClass} />, roles: ['ADMIN'] },
     ],

@@ -84,6 +84,16 @@ public class VertexAiGeminiClient {
      * iteratively, returns the final text reply.
      */
     public Reply complete(List<Map<String, Object>> messages, List<Tool> tools) {
+        return complete(messages, tools, null);
+    }
+
+    /**
+     * Run an agent turn with an optional per-call recorder. The recorder is
+     * invoked synchronously after each tool execution with the call's name,
+     * arguments, result, elapsed time, and error flag — giving the caller
+     * a hook to persist a per-tool-call audit row (see B2).
+     */
+    public Reply complete(List<Map<String, Object>> messages, List<Tool> tools, ToolCallRecorder recorder) {
         if (!configured) {
             throw new IllegalStateException("Gemini client is not configured");
         }
@@ -139,42 +149,66 @@ public class VertexAiGeminiClient {
                 }
 
                 Content responseContent = response.getCandidates(0).getContent();
-                FunctionCall functionCall = null;
+                // Gemini may emit MULTIPLE function_call parts in one response when it
+                // wants to fan out parallel calls (e.g., "do this for all 12 dealers" →
+                // 12 parallel get_floorplan_exposure calls). The Vertex AI SDK requires
+                // us to send back exactly one function_response part per function_call
+                // part, in a single function-role Content message. Earlier B1.2/B2 code
+                // captured only the LAST function_call, sent back 1 response, and Gemini
+                // refused on the next iteration with INVALID_ARGUMENT. Captured as
+                // gotcha #14 in feedback_gcp_gotchas.md.
+                List<FunctionCall> functionCalls = new ArrayList<>();
                 StringBuilder textParts = new StringBuilder();
                 for (Part part : responseContent.getPartsList()) {
                     if (part.hasFunctionCall()) {
-                        functionCall = part.getFunctionCall();
+                        functionCalls.add(part.getFunctionCall());
                     } else if (!part.getText().isEmpty()) {
                         textParts.append(part.getText());
                     }
                 }
 
-                if (functionCall != null) {
-                    String toolName = functionCall.getName();
-                    Map<String, Object> args = structToMap(functionCall.getArgs());
-                    log.info("Gemini tool call: {}({})", toolName, args);
-                    String toolResult;
-                    try {
-                        toolResult = toolExecutor.execute(toolName, args);
-                    } catch (Exception e) {
-                        toolResult = "Error: " + e.getMessage();
-                    }
-                    trace.add(new ToolCallTrace(toolName, args, toolResult));
-
-                    // Echo the model's call back into the conversation, then attach our response
+                if (!functionCalls.isEmpty()) {
+                    // Echo the model's request (containing N function_call parts) back into the conversation
                     conversation.add(responseContent);
-                    conversation.add(Content.newBuilder()
-                            .setRole("function")
-                            .addParts(Part.newBuilder()
-                                    .setFunctionResponse(FunctionResponse.newBuilder()
-                                            .setName(toolName)
-                                            .setResponse(Struct.newBuilder()
-                                                    .putFields("result", com.google.protobuf.Value.newBuilder()
-                                                            .setStringValue(toolResult).build())
-                                                    .build())
-                                            .build())
-                                    .build())
-                            .build());
+
+                    // Build a single function-role Content with N function_response parts —
+                    // one for each function_call, in the same order. Execute each call,
+                    // capture per-call elapsed time, and persist via the recorder.
+                    Content.Builder responseBuilder = Content.newBuilder().setRole("function");
+                    for (FunctionCall fc : functionCalls) {
+                        String toolName = fc.getName();
+                        Map<String, Object> args = structToMap(fc.getArgs());
+                        log.info("Gemini tool call: {}({})", toolName, args);
+                        long started = System.currentTimeMillis();
+                        String toolResult;
+                        boolean errored = false;
+                        try {
+                            toolResult = toolExecutor.execute(toolName, args);
+                        } catch (Exception e) {
+                            toolResult = "Error: " + e.getMessage();
+                            errored = true;
+                        }
+                        long elapsedMs = System.currentTimeMillis() - started;
+                        trace.add(new ToolCallTrace(toolName, args, toolResult, elapsedMs, errored));
+                        if (recorder != null) {
+                            try {
+                                recorder.record(toolName, args, toolResult, elapsedMs, errored);
+                            } catch (Exception recErr) {
+                                // Don't let an audit failure break the agent loop
+                                log.warn("ToolCallRecorder threw: {}", recErr.getMessage());
+                            }
+                        }
+                        responseBuilder.addParts(Part.newBuilder()
+                                .setFunctionResponse(FunctionResponse.newBuilder()
+                                        .setName(toolName)
+                                        .setResponse(Struct.newBuilder()
+                                                .putFields("result", com.google.protobuf.Value.newBuilder()
+                                                        .setStringValue(toolResult).build())
+                                                .build())
+                                        .build())
+                                .build());
+                    }
+                    conversation.add(responseBuilder.build());
                     continue;
                 }
 
@@ -222,7 +256,23 @@ public class VertexAiGeminiClient {
 
     public record Reply(String text, int promptTokens, int completionTokens, List<ToolCallTrace> toolCalls) {}
 
-    public record ToolCallTrace(String toolName, Map<String, Object> args, String result) {}
+    public record ToolCallTrace(String toolName, Map<String, Object> args, String result,
+                                long elapsedMs, boolean errored) {
+        /** Backwards-compatible constructor (older callers in tests). */
+        public ToolCallTrace(String toolName, Map<String, Object> args, String result) {
+            this(toolName, args, result, 0L, false);
+        }
+    }
+
+    /**
+     * Callback invoked once per tool execution inside the agent loop. Use it
+     * to persist an audit row (e.g., {@code AgentToolCallAuditService.recordReadToolCall})
+     * without coupling the client to the audit subsystem.
+     */
+    @FunctionalInterface
+    public interface ToolCallRecorder {
+        void record(String toolName, Map<String, Object> args, String result, long elapsedMs, boolean errored);
+    }
 
     public static class GeminiException extends RuntimeException {
         public GeminiException(String message, Throwable cause) {

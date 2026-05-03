@@ -65,10 +65,16 @@ public class AgentController {
 
     @GetMapping("/info")
     public ResponseEntity<Map<String, Object>> info() {
+        // Derive the human-readable label from the live provider so we don't
+        // mis-advertise "Claude via OpenClaw" when running on Gemini (and vice
+        // versa). The model id format is e.g. "google/gemini-2.5-flash" or
+        // "anthropic/claude-sonnet-4-6" — both impls already return this.
+        String model = agentService.getModel();
+        String label = labelFor(model);
         return ResponseEntity.ok(Map.of(
                 "available", agentService.isAvailable(),
-                "model", agentService.getModel(),
-                "label", "AutoSales Agent (Claude via OpenClaw)",
+                "model", model,
+                "label", label,
                 "skill", "autosales-api",
                 "features", Map.of(
                         "streaming", true,
@@ -77,6 +83,13 @@ public class AgentController {
                         "externalDataSources", List.of("nhtsa")
                 )
         ));
+    }
+
+    private static String labelFor(String model) {
+        if (model == null) return "AutoSales Agent";
+        if (model.startsWith("google/")) return "AutoSales Agent (Gemini on Vertex AI)";
+        if (model.startsWith("anthropic/")) return "AutoSales Agent (Claude via OpenClaw)";
+        return "AutoSales Agent (" + model + ")";
     }
 
     // --- Conversation management ---

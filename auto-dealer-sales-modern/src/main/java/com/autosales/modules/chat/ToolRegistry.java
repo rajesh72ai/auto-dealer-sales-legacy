@@ -123,15 +123,24 @@ public class ToolRegistry {
                       optional("moneyFactor", "number", "Money factor (default 0.00125)"),
                       optional("termMonths", "integer", "Lease term in months (default 36)")));
 
-        register("create_lead", "Create a new customer lead",
-                props(required("dealerCode", "string", "Dealer code"),
-                      required("firstName", "string", "Customer first name"),
-                      required("lastName", "string", "Customer last name"),
-                      optional("phone", "string", "Phone number"),
-                      optional("email", "string", "Email address"),
-                      required("interestType", "string", "NEW or USED"),
-                      optional("interestDetails", "string", "What customer is looking for"),
-                      required("source", "string", "Lead source: WALK_IN, PHONE, WEB, REFERRAL")));
+        register("create_lead", "Create a new customer lead. REQUIRES an existing customerId — use list_customers first to find or confirm the customer; if no customer exists yet, decline and ask the user to create the customer first.",
+                props(required("customerId", "integer", "ID of the EXISTING customer this lead is for. Resolve via list_customers before proposing."),
+                      required("dealerCode", "string", "Dealer code"),
+                      required("leadSource", "string", "Lead source: WALK_IN, PHONE, WEB, or REFERRAL"),
+                      optional("interestModel", "string", "Vehicle model the customer is interested in"),
+                      optional("interestYear", "integer", "Vehicle year the customer is interested in"),
+                      optional("followUpDate", "string", "Follow-up date in YYYY-MM-DD format"),
+                      optional("assignedSales", "string", "Salesperson user id; defaults to current caller")));
+
+        // --- Incentives (read) ---
+        register("list_incentives", "List available dealer incentive programs (rebates, low APR offers, lease specials, etc.). Filter by type or active flag.",
+                props(optional("type", "string", "Filter by program type (e.g. REBATE, LOW_APR, LEASE_SPECIAL)"),
+                      optional("active", "string", "Filter by active flag: true|false"),
+                      optional("page", "integer", "Page number (default 0)"),
+                      optional("size", "integer", "Page size (default 20)")));
+
+        register("get_incentive", "Get details of a specific incentive program by program code/id.",
+                props(required("programCode", "string", "Incentive program code or id, e.g. INC001")));
 
         register("run_credit_check", "Run a credit check for a customer",
                 props(required("customerId", "integer", "Customer ID"),

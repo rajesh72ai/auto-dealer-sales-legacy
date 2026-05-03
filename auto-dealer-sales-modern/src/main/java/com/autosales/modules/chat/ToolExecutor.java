@@ -99,6 +99,12 @@ public class ToolExecutor {
                 case "create_lead" -> post("/api/leads", args);
                 case "run_credit_check" -> post("/api/credit-checks", args);
 
+                // Incentives (read)
+                case "list_incentives" -> get("/api/admin/incentives?type=%s&active=%s&page=%s&size=%s",
+                        arg(args, "type", ""), arg(args, "active", ""),
+                        arg(args, "page", "0"), arg(args, "size", "20"));
+                case "get_incentive" -> get("/api/admin/incentives/%s", arg(args, "programCode"));
+
                 // Capability Gap Logging (reusable across apps)
                 case "log_capability_gap" -> post("/api/capability-gaps", args);
 
