@@ -46,6 +46,11 @@ openclaw:
 # not Google AI Studio (api-key-based).
 agent:
   provider: gemini
+  action:
+    # Tighter undo window than the default 60s. Demo cadence is fast — users
+    # decide within ~15-30s; a 30s window is plenty and reduces the risk of
+    # accidentally undoing actions confirmed several minutes ago.
+    undo-window-seconds: 30
 gemini:
   api-key: ""
   project-id: ${GEMINI_PROJECT_ID}
