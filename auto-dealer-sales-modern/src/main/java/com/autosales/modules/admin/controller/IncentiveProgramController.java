@@ -18,9 +18,15 @@ import org.springframework.web.bind.annotation.*;
  * REST controller for incentive program administration.
  * Port of INCADM00.cbl — incentive program master file maintenance (add/update/activate/deactivate).
  */
+/**
+ * NOTE on roles: AGENT_SERVICE was added 2026-05-03 alongside DealerController
+ * to allow the agent's ToolExecutor (API-key path) to read incentive programs
+ * via the list_incentives / get_incentive tools. Writes (POST/PUT) keep the
+ * tighter ADMIN/OPERATOR gate via per-method @PreAuthorize where applicable.
+ */
 @RestController
 @RequestMapping("/api/admin/incentives")
-@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','OPERATOR','AGENT_SERVICE')")
 @Slf4j
 public class IncentiveProgramController {
 

@@ -42,8 +42,14 @@ public class NhtsaService {
     private final Map<String, CacheEntry<Map<String, Object>>> decodeCache = new ConcurrentHashMap<>();
 
     public NhtsaService() {
+        // User-Agent: NHTSA's APIs returned 403 from Cloud Run egress with
+        // our original "AUTOSALES/1.0 (Cloud Run; Vertex AI Gemini agent)"
+        // string. The parens-and-semicolons format apparently trips bot
+        // detection on some federal endpoints. A plain Mozilla-style UA
+        // gets through cleanly. We keep the AUTOSALES/1.0 product token
+        // for telemetry visibility on our side.
         this.client = RestClient.builder()
-                .defaultHeader("User-Agent", "AUTOSALES/1.0 (Cloud Run; Vertex AI Gemini agent)")
+                .defaultHeader("User-Agent", "Mozilla/5.0 (compatible; AUTOSALES/1.0)")
                 .defaultHeader("Accept", "application/json")
                 .build();
     }

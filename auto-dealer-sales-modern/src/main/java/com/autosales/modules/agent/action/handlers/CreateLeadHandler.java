@@ -14,6 +14,8 @@ import com.autosales.modules.customer.dto.LeadRequest;
 import com.autosales.modules.customer.dto.LeadResponse;
 import com.autosales.modules.customer.service.CustomerLeadService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,8 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 public class CreateLeadHandler implements ActionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(CreateLeadHandler.class);
 
     private final CustomerLeadService leadService;
     private final PayloadValidator payloadValidator;
@@ -90,12 +94,55 @@ public class CreateLeadHandler implements ActionHandler {
 
     private LeadRequest toRequest(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
         Map<String, Object> filtered = new HashMap<>(payload);
-        if (blank(filtered.get("dealerCode")))    filtered.put("dealerCode", user.getDealerCode());
-        if (blank(filtered.get("assignedSales"))) filtered.put("assignedSales", user.getUserId());
+
+        // dealerCode default — caller's dealer
+        if (blank(filtered.get("dealerCode"))) {
+            filtered.put("dealerCode", user.getDealerCode());
+        }
+
+        // assignedSales default — caller's user id, hard-fallback to "SYSTEM".
+        // Hardened 2026-05-03 after live test produced "must not be blank" on
+        // assignedSales because Gemini either omitted or sent a value that
+        // looked non-blank but didn't pass downstream validation. Defenses:
+        //   - blank() handles null, "", whitespace, AND the literal string "null"
+        //   - if user.getUserId() is itself blank, fall through to "SYSTEM"
+        //   - clamp to LeadRequest.assignedSales @Size(max=8)
+        Object incoming = filtered.get("assignedSales");
+        boolean defaultFilled = false;
+        if (blank(incoming)) {
+            String fallback = user != null ? user.getUserId() : null;
+            if (blank(fallback)) fallback = "SYSTEM";
+            if (fallback.length() > 8) fallback = fallback.substring(0, 8);
+            filtered.put("assignedSales", fallback);
+            defaultFilled = true;
+        } else {
+            // Defensive truncation: LLM sometimes pastes the full salesperson
+            // name (e.g. "Kumaran Thandavamurthy") into this field; clamp to 8.
+            String s = incoming.toString().trim();
+            if (s.length() > 8) {
+                log.warn("CreateLeadHandler: truncating LLM-supplied assignedSales '{}' to 8 chars", s);
+                filtered.put("assignedSales", s.substring(0, 8));
+                defaultFilled = true;
+            }
+        }
+        if (defaultFilled) {
+            log.info("CreateLeadHandler: default-fill triggered for assignedSales (final value='{}', user.userId='{}')",
+                    filtered.get("assignedSales"),
+                    user != null ? user.getUserId() : "(null user)");
+        }
         return payloadValidator.convertAndValidate(filtered, LeadRequest.class);
     }
 
-    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
+    /**
+     * Robust blank check — handles {@code null}, empty string, whitespace, AND
+     * the literal text {@code "null"} which LLMs sometimes emit verbatim when
+     * they have no value to supply.
+     */
+    private static boolean blank(Object o) {
+        if (o == null) return true;
+        String s = o.toString().trim();
+        return s.isEmpty() || "null".equalsIgnoreCase(s);
+    }
 
     private ImpactPreview buildPreview(LeadResponse lead, LeadRequest req) {
         ImpactPreview p = ImpactPreview.builder()

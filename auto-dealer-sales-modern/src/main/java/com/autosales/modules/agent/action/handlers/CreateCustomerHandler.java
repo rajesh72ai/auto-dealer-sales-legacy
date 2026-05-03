@@ -123,7 +123,16 @@ public class CreateCustomerHandler implements ActionHandler {
         return payloadValidator.convertAndValidate(filtered, CustomerRequest.class);
     }
 
-    private static boolean blank(Object o) { return o == null || o.toString().isBlank(); }
+    /**
+     * Robust blank check — handles null, empty string, whitespace, AND the
+     * literal text "null" which LLMs sometimes emit verbatim when they have
+     * no value to supply. Hardened 2026-05-03 alongside CreateLeadHandler.
+     */
+    private static boolean blank(Object o) {
+        if (o == null) return true;
+        String s = o.toString().trim();
+        return s.isEmpty() || "null".equalsIgnoreCase(s);
+    }
 
     private ImpactPreview buildPreview(CustomerResponse cust, CustomerRequest req) {
         ImpactPreview p = ImpactPreview.builder()
