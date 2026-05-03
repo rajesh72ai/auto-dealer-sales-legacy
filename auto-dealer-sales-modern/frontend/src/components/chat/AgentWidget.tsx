@@ -838,7 +838,65 @@ function AgentWidget() {
                             <p className="mt-1.5 text-[13px] leading-snug">{msg.proposalError}</p>
                           </div>
                         )}
-                        {msg.proposal && (() => {
+                        {/* Prerequisite gap card — shown when ActionService.propose detected
+                            unmet prereqs and short-circuited. Minimal v1 rendering: shows what's
+                            missing + the satisfier action; full inline-form chaining is in the
+                            B-prereq frontend follow-up. */}
+                        {msg.proposal?.prerequisiteGap && (
+                          <div className="mt-3 rounded-lg border border-violet-300 bg-violet-50 p-3 text-sm text-violet-900">
+                            <div className="flex items-start gap-2 font-semibold">
+                              <ShieldCheck className="mt-0.5 h-4 w-4 text-violet-700" />
+                              <span>Prerequisite needed before {msg.proposal.prerequisiteGap.parentTool}</span>
+                            </div>
+                            <p className="mt-1.5 text-[13px] leading-snug">
+                              {msg.proposal.prerequisiteGap.summary}
+                            </p>
+                            <ul className="mt-2 space-y-1.5">
+                              {msg.proposal.prerequisiteGap.unmet.map((u, i) => (
+                                <li key={i} className="rounded bg-white/70 p-2 text-[12px]">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <code className="rounded bg-violet-100 px-1 font-mono text-[11px]">
+                                      {u.payloadField}
+                                    </code>
+                                    <span className="text-gray-700">missing —</span>
+                                    {u.finderToolName && (
+                                      <span>
+                                        try{' '}
+                                        <code className="rounded bg-sky-100 px-1 font-mono text-[11px]">
+                                          {u.finderToolName}
+                                        </code>{' '}
+                                        first
+                                      </span>
+                                    )}
+                                    {u.satisfierToolName && (
+                                      <span>
+                                        or create via{' '}
+                                        <code className="rounded bg-emerald-100 px-1 font-mono text-[11px]">
+                                          {u.satisfierToolName}
+                                        </code>
+                                      </span>
+                                    )}
+                                  </div>
+                                  {u.userFacingHint && (
+                                    <p className="mt-1 text-[11px] italic text-gray-600">
+                                      {u.userFacingHint}
+                                    </p>
+                                  )}
+                                  {u.requiredUserData && u.requiredUserData.length > 0 && (
+                                    <p className="mt-1 text-[11px] text-gray-600">
+                                      Required fields: {u.requiredUserData.join(', ')}
+                                    </p>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="mt-2 text-[11px] italic text-gray-600">
+                              Provide the missing data in your next message and I'll chain the
+                              satisfier action before the original.
+                            </p>
+                          </div>
+                        )}
+                        {msg.proposal?.token && !msg.proposal?.prerequisiteGap && (() => {
                           const isIrreversible = msg.proposal.reversible === false;
                           const isPending = !msg.proposalStatus || msg.proposalStatus === 'pending';
                           const isArmed = armedIrreversibleIdx === idx;

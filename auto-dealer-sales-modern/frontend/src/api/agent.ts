@@ -101,13 +101,33 @@ export interface ProposalPreview {
   reversible?: boolean;
 }
 
+export interface PrereqUnmet {
+  payloadField: string;
+  entityName: string;
+  finderToolName?: string | null;
+  satisfierToolName?: string | null;
+  resultField?: string | null;
+  userFacingHint?: string | null;
+  requiredUserData?: string[];
+}
+
+export interface PrerequisiteGap {
+  parentTool: string;
+  parentTier: string;
+  summary: string;
+  unmet: PrereqUnmet[];
+  originalPayload?: Record<string, unknown>;
+}
+
 export interface AgentProposal {
-  token: string;
+  token?: string | null;
   toolName: string;
   tier: string;
-  preview: ProposalPreview;
-  expiresAt: string;
+  preview?: ProposalPreview | null;
+  expiresAt?: string | null;
   reversible: boolean;
+  /** Present when ActionService detected unmet prerequisites and short-circuited. */
+  prerequisiteGap?: PrerequisiteGap | null;
 }
 
 /** Persistent + optionally streamed. Frontend sends only the current turn. */
