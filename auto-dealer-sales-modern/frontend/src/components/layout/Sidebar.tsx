@@ -38,6 +38,7 @@ import {
   Sparkles,
   Lightbulb,
   Activity,
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 
@@ -146,6 +147,7 @@ const navGroups: NavGroupDef[] = [
       { label: 'AI Tool-Call Trace', path: '/admin/agent-trace', icon: <Activity className={iconClass} />, roles: ['ADMIN', 'MANAGER'] },
       { label: 'AI Analytics & Cost', path: '/admin/agent-analytics', icon: <BarChart3 className={iconClass} />, roles: ['ADMIN', 'MANAGER'] },
       { label: 'AI Capability Backlog', path: '/admin/capability-gaps', icon: <Lightbulb className={iconClass} />, roles: ['ADMIN'] },
+      { label: 'API Documentation', path: '/admin/api-docs', icon: <BookOpen className={iconClass} />, roles: ['ADMIN', 'MANAGER'] },
       { label: 'Config', path: '/admin/config', icon: <Settings className={iconClass} />, roles: ['ADMIN'] },
     ],
   },
