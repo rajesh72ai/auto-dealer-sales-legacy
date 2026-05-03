@@ -47,6 +47,27 @@ public class VertexAiGeminiClient {
 
     private static final Logger log = LoggerFactory.getLogger(VertexAiGeminiClient.class);
     private static final int MAX_AGENT_ITERATIONS = 10;
+    /**
+     * Per-iteration soft cap on Vertex AI generateContent latency. Cloud Run's
+     * outer request timeout is 300s; if a single Gemini round-trip eats more
+     * than this, we bail out gracefully with a partial reply rather than let
+     * the whole agent loop time out and Cloud Run truncate the response. 60s
+     * is generous — typical Flash latency is 3-6s.
+     */
+    private static final long PER_TURN_TIMEOUT_SECONDS = 60;
+
+    /**
+     * Shared executor for the timeout wrapper around generateContent. Cached
+     * thread pool — daemon threads, capped by JVM resources rather than a
+     * fixed size, since each agent turn issues one short-lived task per
+     * iteration and they don't stack.
+     */
+    private static final java.util.concurrent.ExecutorService TIMEOUT_EXECUTOR =
+            java.util.concurrent.Executors.newCachedThreadPool(r -> {
+                Thread t = new Thread(r, "gemini-timeout-worker");
+                t.setDaemon(true);
+                return t;
+            });
 
     private final String projectId;
     private final String location;
@@ -135,7 +156,41 @@ public class VertexAiGeminiClient {
 
             for (int iter = 0; iter < MAX_AGENT_ITERATIONS; iter++) {
                 log.debug("Gemini iteration {} — conversation length={}", iter, conversation.size());
-                GenerateContentResponse response = model.generateContent(conversation);
+
+                // Per-turn timeout — if a single generateContent eats more than
+                // PER_TURN_TIMEOUT_SECONDS (60s by default), bail out gracefully
+                // with a partial reply instead of letting Cloud Run's outer 300s
+                // request timeout truncate the SSE response.
+                final List<Content> conv = conversation;
+                final GenerativeModel m = model;
+                GenerateContentResponse response;
+                try {
+                    response = java.util.concurrent.CompletableFuture
+                            .supplyAsync(() -> {
+                                try {
+                                    return m.generateContent(conv);
+                                } catch (java.io.IOException ioe) {
+                                    throw new java.util.concurrent.CompletionException(ioe);
+                                }
+                            }, TIMEOUT_EXECUTOR)
+                            .get(PER_TURN_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (java.util.concurrent.TimeoutException te) {
+                    log.warn("Gemini generateContent timed out after {}s on iteration {} (trace={} tool calls so far)",
+                            PER_TURN_TIMEOUT_SECONDS, iter, trace.size());
+                    String partial = "(The agent took longer than " + PER_TURN_TIMEOUT_SECONDS
+                            + "s on iteration " + (iter + 1) + ". "
+                            + (trace.isEmpty()
+                                    ? "No tool calls completed."
+                                    : "Partial result from " + trace.size() + " tool call(s) collected.")
+                            + " Try a more focused prompt or break the request into smaller turns.)";
+                    return new Reply(partial, promptTokensTotal, completionTokensTotal, trace);
+                } catch (java.util.concurrent.ExecutionException ee) {
+                    Throwable cause = ee.getCause() != null ? ee.getCause() : ee;
+                    throw new GeminiException("Gemini error: " + cause.getMessage(), cause);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new GeminiException("Gemini call interrupted", ie);
+                }
 
                 if (response.getUsageMetadata() != null) {
                     promptTokensTotal += response.getUsageMetadata().getPromptTokenCount();

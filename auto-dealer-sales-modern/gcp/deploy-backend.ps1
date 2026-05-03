@@ -30,6 +30,10 @@ Write-Done "Backend image pushed: $GcpBackendImage"
 # 2. Deploy to Cloud Run
 # --------------------------------------------------------------------
 Write-Step "Deploying backend to Cloud Run service [$GcpBackendService]"
+# --min-instances=1 keeps one container always warm; eliminates the cold-start
+# hangs (~30-60s for Spring Boot + Vertex AI + BigQuery client init) when the
+# first agent prompt arrives after a quiet period. Costs ~$10/mo extra; trial
+# credit absorbs it. Set back to 0 if cost matters more than first-touch UX.
 
 # JDBC URL uses the Cloud SQL Postgres Socket Factory library (added in pom.xml).
 # The library connects via the SA's IAM identity using the standard JDBC URL form
@@ -64,7 +68,7 @@ gcloud run deploy $GcpBackendService `
     --allow-unauthenticated `
     --memory=1Gi `
     --cpu=1 `
-    --min-instances=0 `
+    --min-instances=1 `
     --max-instances=2 `
     --concurrency=80 `
     --timeout=300 `
