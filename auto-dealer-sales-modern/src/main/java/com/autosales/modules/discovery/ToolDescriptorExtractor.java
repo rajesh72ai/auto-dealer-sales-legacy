@@ -54,7 +54,22 @@ public class ToolDescriptorExtractor {
     void extract() {
         Map<String, RequestMappingHandlerMapping> beans =
                 context.getBeansOfType(RequestMappingHandlerMapping.class);
-        Set<String> writeToolNames = Set.copyOf(actionRegistry.names());
+
+        // Build a Set of "VERB /path" descriptors from each ActionHandler's
+        // endpointDescriptor() — these are the exact paths protected by
+        // propose/confirm. Anything matching gets WRITE_VIA_PROPOSE classification
+        // instead of WRITE. We compare normalized (collapse multiple slashes,
+        // strip trailing /) so handler-declared "POST /api/leads" matches a
+        // route registered as "/api/leads".
+        Set<String> proposeProtectedDescriptors = new java.util.HashSet<>();
+        actionRegistry.all().forEach(h -> {
+            String d = h.endpointDescriptor();
+            if (d != null && !d.isBlank()) {
+                proposeProtectedDescriptors.add(normalizeDescriptor(d));
+            }
+        });
+        log.info("ToolDescriptorExtractor: {} ActionHandler-protected endpoints will be classified WRITE_VIA_PROPOSE: {}",
+                proposeProtectedDescriptors.size(), proposeProtectedDescriptors);
 
         for (RequestMappingHandlerMapping mapping : beans.values()) {
             mapping.getHandlerMethods().forEach((info, handler) -> {
@@ -71,7 +86,7 @@ public class ToolDescriptorExtractor {
 
                 for (String path : patterns) {
                     for (var method : methods) {
-                        AutoToolDescriptor d = build(handler, path, method.name(), writeToolNames);
+                        AutoToolDescriptor d = build(handler, path, method.name(), proposeProtectedDescriptors);
                         if (d != null) catalog.add(d);
                     }
                 }
@@ -117,7 +132,7 @@ public class ToolDescriptorExtractor {
 
     // ---------- internals ----------
 
-    private AutoToolDescriptor build(HandlerMethod handler, String path, String verb, Set<String> writeToolNames) {
+    private AutoToolDescriptor build(HandlerMethod handler, String path, String verb, Set<String> proposeProtectedDescriptors) {
         if (!path.startsWith("/api/")
                 && !path.startsWith("/mcp")
                 && !path.startsWith("/.well-known/")
@@ -131,7 +146,7 @@ public class ToolDescriptorExtractor {
 
         List<Map<String, String>> params = extractParams(handler);
         String description = synthDescription(verb, path, javaMethod);
-        String safety = classifySafety(verb, path, name, writeToolNames);
+        String safety = classifySafety(verb, path, proposeProtectedDescriptors);
         List<String> tags = classifyTags(verb, path, safety);
 
         return AutoToolDescriptor.builder()
@@ -193,10 +208,11 @@ public class ToolDescriptorExtractor {
     }
 
     /**
-     * Path-prefix-based safety classification. Conservative defaults — we
-     * lean toward MORE restriction; admins can relax later.
+     * Path-prefix-based safety classification, with ActionHandler endpoint
+     * paths upgraded to WRITE_VIA_PROPOSE. Conservative defaults — we lean
+     * toward MORE restriction; admins can relax later.
      */
-    private static String classifySafety(String verb, String path, String name, Set<String> writeToolNames) {
+    private static String classifySafety(String verb, String path, Set<String> proposeProtectedDescriptors) {
         // Hard NO surfaces — never expose to the agent
         if (path.startsWith("/api/auth/")) return "AGENT_NO";
         if (path.startsWith("/api/agent/") || path.startsWith("/api/admin/agent-")) return "AGENT_NO";
@@ -210,18 +226,35 @@ public class ToolDescriptorExtractor {
 
         boolean isWrite = !"GET".equals(verb);
 
-        // Writes that have ActionHandler beans go through propose/confirm
-        if (isWrite && writeToolNames.stream().anyMatch(name::contains)) {
-            return "WRITE_VIA_PROPOSE";
-        }
-        // Other writes — flag broadly; agent can't invoke directly.
+        // Writes that match a registered ActionHandler's endpointDescriptor go
+        // through propose/confirm — the agent can never invoke them directly.
         if (isWrite) {
+            String descriptor = normalizeDescriptor(verb + " " + path);
+            if (proposeProtectedDescriptors.contains(descriptor)) {
+                return "WRITE_VIA_PROPOSE";
+            }
             return "WRITE";
         }
 
         // All reads land here — admin reads are usually fine for agent governance use
         if (path.startsWith("/api/admin/")) return "INTERNAL_READ";
         return "PUBLIC_READ";
+    }
+
+    /**
+     * Normalize a "VERB /path" descriptor for cross-comparison. ActionHandler
+     * descriptors come from human-typed strings (e.g. "POST /api/leads") while
+     * Spring registers paths with normalized slashes — collapse multiple
+     * slashes, strip trailing slash, uppercase the verb.
+     */
+    private static String normalizeDescriptor(String d) {
+        String s = d.trim().replaceAll("\\s+", " ");
+        int sp = s.indexOf(' ');
+        if (sp < 0) return s;
+        String verb = s.substring(0, sp).toUpperCase();
+        String path = s.substring(sp + 1).replaceAll("/+", "/");
+        if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
+        return verb + " " + path;
     }
 
     private static List<String> classifyTags(String verb, String path, String safety) {
