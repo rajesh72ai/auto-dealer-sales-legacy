@@ -39,6 +39,15 @@ public class ToolRegistry {
         register("get_customer", "Get customer details by ID",
                 props(required("customerId", "integer", "Customer ID")));
 
+        register("find_customer",
+                "Search for an existing customer by name. Use this BEFORE proposing create_customer "
+                + "or any action that needs a customerId. More precise than list_customers (which is "
+                + "paginated bulk listing). Searches via 'last name contains' match — for best results "
+                + "pass the LAST name; the result set will be small enough to scan for the right person.",
+                props(required("dealerCode", "string", "Dealer code, e.g. DLR01"),
+                      required("lastName", "string", "Customer's last name (or partial match)"),
+                      optional("firstName", "string", "Optional first name to narrow the match further")));
+
         // --- Deals ---
         register("list_deals", "List deals for a dealer",
                 props(required("dealerCode", "string", "Dealer code"),

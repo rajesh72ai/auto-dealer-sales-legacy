@@ -34,6 +34,7 @@ public class ActionService {
     private final CurrentUserContext userContext;
     private final ObjectMapper mapper;
     private final PrerequisiteResolver prerequisiteResolver;
+    private final com.autosales.modules.agent.AgentConversationService conversationService;
 
     @org.springframework.beans.factory.annotation.Value("${agent.action.undo-window-seconds:60}")
     private int undoWindowSeconds;
@@ -135,6 +136,21 @@ public class ActionService {
                     System.currentTimeMillis() - started,
                     handler.reversible(), compensation);
             tokenService.markConfirmed(token, audit.getAuditId());
+
+            // B-prereq follow-up: inject the action result back into the
+            // conversation so subsequent agent turns "remember" what the user
+            // just confirmed. Without this, the agent doesn't know the new
+            // entity exists and would propose a duplicate (verified live
+            // 2026-05-03 with create_customer for Jane Smith).
+            if (proposal.getConversationId() != null && conversationService != null) {
+                try {
+                    String note = formatActionResultNote(handler.toolName(), result, audit.getAuditId());
+                    conversationService.appendSystemNote(proposal.getConversationId(), note);
+                } catch (Exception noteErr) {
+                    log.warn("Failed to inject action-result note for audit {}: {}",
+                            audit.getAuditId(), noteErr.getMessage());
+                }
+            }
         } catch (RuntimeException ex) {
             auditService.recordFailed(user, proposal.getConversationId(), token,
                     handler.toolName(), handler.tier().getCode(),
@@ -182,6 +198,29 @@ public class ActionService {
                 "Your role (" + (user.getRole() != null ? user.getRole().name() : "unknown") +
                 ") is not permitted to execute " + handler.toolName());
         }
+    }
+
+    /**
+     * Build a one-line system note summarizing what the user just confirmed.
+     * Format: "[Action confirmed: <tool> succeeded. Result: <key fields>. Audit ID <n>.]"
+     * Goes into the conversation as role=system so the LLM treats it as
+     * authoritative ground truth on subsequent turns.
+     */
+    private String formatActionResultNote(String toolName, Object result, Long auditId) {
+        StringBuilder sb = new StringBuilder("[Action confirmed: ").append(toolName)
+                .append(" succeeded. ");
+        if (result != null) {
+            try {
+                String json = mapper.writeValueAsString(result);
+                if (json.length() > 600) json = json.substring(0, 600) + "…";
+                sb.append("Result: ").append(json).append(". ");
+            } catch (Exception ignore) {
+                sb.append("Result available. ");
+            }
+        }
+        sb.append("Audit ID ").append(auditId)
+          .append(". This entity is now in the system; reference it by id in future actions.]");
+        return sb.toString();
     }
 
     private Map<String, Object> deserializePayload(String payloadJson) {

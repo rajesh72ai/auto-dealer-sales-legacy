@@ -9,12 +9,15 @@ import com.autosales.modules.agent.action.dryrun.DryRunRollback;
 import com.autosales.modules.agent.action.dto.ImpactPreview;
 import com.autosales.modules.customer.dto.CustomerRequest;
 import com.autosales.modules.customer.dto.CustomerResponse;
+import com.autosales.modules.customer.entity.Customer;
+import com.autosales.modules.customer.repository.CustomerRepository;
 import com.autosales.modules.customer.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,6 +36,7 @@ import java.util.Set;
 public class CreateCustomerHandler implements ActionHandler {
 
     private final CustomerService customerService;
+    private final CustomerRepository customerRepository;
     private final PayloadValidator payloadValidator;
 
     @Override public String toolName() { return "create_customer"; }
@@ -63,6 +67,27 @@ public class CreateCustomerHandler implements ActionHandler {
     @Transactional(rollbackFor = DryRunRollback.class)
     public ImpactPreview dryRun(Map<String, Object> payload, CurrentUserContext.Snapshot user) {
         CustomerRequest req = toRequest(payload, user);
+
+        // Duplicate guard — same firstName + lastName at the same dealer almost
+        // certainly means the LLM is about to recreate someone we already have.
+        // (The OLTP schema has no UNIQUE constraint on (first, last, dealer)
+        // because legitimate name collisions exist; but for an LLM-driven
+        // create_customer we want to refuse and force the user to disambiguate
+        // via find_customer/get_customer first.)
+        List<Customer> matches = customerRepository
+                .findByDealerCodeAndFirstNameIgnoreCaseAndLastNameIgnoreCase(
+                        req.getDealerCode(), req.getFirstName(), req.getLastName());
+        if (!matches.isEmpty()) {
+            Customer existing = matches.get(0);
+            throw new IllegalStateException(String.format(
+                    "A customer named %s %s already exists at %s (customerId=%d). "
+                    + "Use that customer's id directly instead of creating a duplicate. "
+                    + "If this is a different person with the same name, surface that to the "
+                    + "human user for explicit confirmation before proceeding.",
+                    existing.getFirstName(), existing.getLastName(),
+                    existing.getDealerCode(), existing.getCustomerId()));
+        }
+
         CustomerResponse tentative = customerService.create(req);
         ImpactPreview preview = buildPreview(tentative, req);
         throw new DryRunRollback(preview);

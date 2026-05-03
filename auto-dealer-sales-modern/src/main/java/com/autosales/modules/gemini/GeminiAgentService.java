@@ -85,6 +85,15 @@ public class GeminiAgentService implements AgentService {
             details about an entity you have not looked up. If the lookup
             returns no match, say so plainly and offer the next step.
 
+            ### Customer lookup specifically
+            For named customer lookups, PREFER find_customer(dealerCode, lastName,
+            firstName?) over list_customers(dealerCode). list_customers paginates
+            10 at a time and frequently misses recently-created customers; it is
+            for browsing, not finding. find_customer searches by last-name
+            match and returns up to 20 results — scan them for the right person
+            using firstName as a tiebreaker. Only fall back to list_customers if
+            you genuinely want to browse, not to find a specific person.
+
             ### Multi-step queries
             Chain tool calls as needed (e.g., list_customers → get_customer →
             list_deals). For compound questions ("what closed today AND

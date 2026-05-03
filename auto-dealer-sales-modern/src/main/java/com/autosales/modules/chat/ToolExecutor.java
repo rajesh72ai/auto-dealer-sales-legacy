@@ -47,6 +47,8 @@ public class ToolExecutor {
                 case "list_customers" -> get("/api/customers?dealerCode=%s&page=%s&size=%s",
                         arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
                 case "get_customer" -> get("/api/customers/%s", arg(args, "customerId"));
+                case "find_customer" -> get("/api/customers/search?type=LN&value=%s&dealerCode=%s&page=0&size=20",
+                        arg(args, "lastName"), arg(args, "dealerCode"));
 
                 // Deals
                 case "list_deals" -> get("/api/deals?dealerCode=%s&page=%s&size=%s",

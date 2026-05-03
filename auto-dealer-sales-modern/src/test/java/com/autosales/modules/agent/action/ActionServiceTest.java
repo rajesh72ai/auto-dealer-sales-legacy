@@ -33,6 +33,7 @@ class ActionServiceTest {
     @Mock private CurrentUserContext userContext;
     @Spy  private ObjectMapper mapper = new ObjectMapper();
     @Spy  private PrerequisiteResolver prerequisiteResolver = new PrerequisiteResolver();
+    @Mock private com.autosales.modules.agent.AgentConversationService conversationService;
     @InjectMocks private ActionService actionService;
 
     private CurrentUserContext.Snapshot adminSnap;

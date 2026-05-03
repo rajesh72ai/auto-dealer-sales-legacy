@@ -121,6 +121,36 @@ public class AgentConversationService {
         conversationRepo.save(conv);
     }
 
+    /**
+     * Append a synthetic system note to the conversation — used by
+     * {@link com.autosales.modules.agent.action.ActionService#confirm} to
+     * inject the result of a just-executed write back into the agent's
+     * memory (B-prereq follow-up).
+     *
+     * <p>Without this, after the user clicks Execute on a ProposalCard the
+     * action commits to the DB but Gemini's conversation history never
+     * sees the result. Subsequent turns fail to chain compound actions
+     * because the model "doesn't know" what just happened.
+     *
+     * <p>The note is stored with role={@code system} so any LLM that replays
+     * the conversation reads it as authoritative ground truth, distinct
+     * from user / assistant turns.
+     */
+    public void appendSystemNote(String conversationId, String note) {
+        AgentConversation conv = conversationRepo.findById(conversationId).orElse(null);
+        if (conv == null) return;
+        int nextSeq = (int) messageRepo.countByConversationId(conversationId);
+        AgentMessageEntity row = AgentMessageEntity.builder()
+                .conversationId(conversationId)
+                .role("system")
+                .content(note)
+                .seq(nextSeq)
+                .build();
+        messageRepo.save(row);
+        conv.setUpdatedTs(LocalDateTime.now());
+        conversationRepo.save(conv);
+    }
+
     public void delete(String conversationId) {
         messageRepo.deleteByConversationId(conversationId);
         conversationRepo.deleteById(conversationId);

@@ -29,4 +29,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer> {
     Page<Customer> findByDealerCodeAndHomePhone(String dealerCode, String homePhone, Pageable pageable);
 
     Optional<Customer> findByLastNameAndCellPhoneAndDealerCode(String lastName, String cellPhone, String dealerCode);
+
+    List<Customer> findByDealerCodeAndFirstNameIgnoreCaseAndLastNameIgnoreCase(
+            String dealerCode, String firstName, String lastName);
 }
