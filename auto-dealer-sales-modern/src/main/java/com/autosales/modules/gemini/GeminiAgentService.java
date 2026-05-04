@@ -625,6 +625,26 @@ public class GeminiAgentService implements AgentService {
         sys.put("content", systemInstruction);
         messages.add(0, sys);
 
+        // Inject today's date — without this anchor the LLM falls back to its
+        // training-data prior (often 2024) when the user says "past week" or
+        // "this month", producing empty result sets against current data and
+        // confusing demos. Computed per turn in case the JVM survives midnight.
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.YearMonth thisMonth = java.time.YearMonth.from(today);
+        StringBuilder dateLine = new StringBuilder("Today's date: ");
+        dateLine.append(today).append(" (")
+                .append(today.getDayOfWeek().name().toLowerCase()).append("). ");
+        dateLine.append("Current month: ").append(thisMonth).append(". ");
+        dateLine.append("\"This week\" = the past 7 calendar days ending today (").append(today.minusDays(7))
+                .append(" to ").append(today).append("). ");
+        dateLine.append("\"This month\" = ").append(thisMonth).append(". ");
+        dateLine.append("Use these as the anchor for any date-relative request unless the user names an explicit range.");
+
+        Map<String, Object> dateCtx = new LinkedHashMap<>();
+        dateCtx.put("role", "system");
+        dateCtx.put("content", dateLine.toString());
+        messages.add(1, dateCtx);
+
         if (user != null) {
             StringBuilder sb = new StringBuilder("Current caller: id=");
             sb.append(user.getUserId() != null ? user.getUserId() : "anonymous");
@@ -636,7 +656,7 @@ public class GeminiAgentService implements AgentService {
             Map<String, Object> ctx = new LinkedHashMap<>();
             ctx.put("role", "system");
             ctx.put("content", sb.toString());
-            messages.add(1, ctx);
+            messages.add(2, ctx);
         }
     }
 
