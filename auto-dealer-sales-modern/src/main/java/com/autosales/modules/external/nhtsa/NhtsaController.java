@@ -20,7 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/nhtsa")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','CLERK','OPERATOR')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','SALESPERSON','FINANCE','CLERK','OPERATOR','AGENT_SERVICE')")
 public class NhtsaController {
 
     private final NhtsaService nhtsa;
