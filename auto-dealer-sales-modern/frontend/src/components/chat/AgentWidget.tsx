@@ -552,11 +552,16 @@ function AgentWidget() {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
+        // Slash menu owns Enter while it's open — picking a capability inserts
+        // the prompt into the input for the user to review/edit, NOT auto-send.
+        // Without this guard, two Enter handlers fire and the prompt sends
+        // before the user can modify it.
+        if (slashFilter !== null) return;
         e.preventDefault();
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend, slashFilter],
   );
 
   const handleNewChat = useCallback(() => {
