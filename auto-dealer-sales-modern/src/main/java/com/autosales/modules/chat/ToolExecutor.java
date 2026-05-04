@@ -94,10 +94,10 @@ public class ToolExecutor {
 
                 // Batch & Reports
                 case "get_batch_jobs" -> get("/api/batch/jobs");
-                case "get_daily_sales_report" -> get("/api/batch/reports/daily-sales?dealerCode=%s",
-                        arg(args, "dealerCode"));
-                case "get_commissions_report" -> get("/api/batch/reports/commissions?dealerCode=%s",
-                        arg(args, "dealerCode"));
+                case "get_daily_sales_report" -> get("/api/batch/reports/daily-sales?dealerCode=%s&startDate=%s&endDate=%s",
+                        arg(args, "dealerCode"), arg(args, "startDate"), arg(args, "endDate"));
+                case "get_commissions_report" -> get("/api/batch/reports/commissions?dealerCode=%s&payPeriod=%s",
+                        arg(args, "dealerCode"), arg(args, "payPeriod"));
 
                 // Calculators & Actions
                 case "calculate_loan" -> post("/api/finance/applications/loan-calculator", args);
@@ -127,6 +127,15 @@ public class ToolExecutor {
                         .orElse("Unknown tool: " + toolName);
             };
             return truncate(result);
+        } catch (org.springframework.web.client.HttpStatusCodeException httpEx) {
+            // Surface 4xx response body so schema-drift bugs (LLM omits a
+            // required @RequestParam) appear as actionable text instead of a
+            // vague "internal server error" the model invents from a 400.
+            String body = httpEx.getResponseBodyAsString();
+            log.warn("Tool HTTP error: tool={}, status={}, body={}",
+                    toolName, httpEx.getStatusCode(), body);
+            return "Error " + httpEx.getStatusCode().value() + ": "
+                    + (body == null || body.isBlank() ? httpEx.getMessage() : body);
         } catch (Exception e) {
             log.warn("Tool execution failed: tool={}, error={}", toolName, e.getMessage());
             return "Error: " + e.getMessage();

@@ -112,11 +112,20 @@ public class ToolRegistry {
         // --- Batch & Reports ---
         register("get_batch_jobs", "Get batch job status and history", props());
 
-        register("get_daily_sales_report", "Get daily sales report for a dealer",
-                props(required("dealerCode", "string", "Dealer code")));
+        register("get_daily_sales_report",
+                "Get daily sales summaries for a dealer over a date range. "
+                + "If the user does not specify dates, default to the past 7 days "
+                + "(use today's date for endDate and today-7 for startDate).",
+                props(required("dealerCode", "string", "Dealer code"),
+                      required("startDate", "string", "Start date inclusive, YYYY-MM-DD"),
+                      required("endDate", "string", "End date inclusive, YYYY-MM-DD")));
 
-        register("get_commissions_report", "Get sales commissions report for a dealer",
-                props(required("dealerCode", "string", "Dealer code")));
+        register("get_commissions_report",
+                "Get sales commissions for a dealer for a specific pay period. "
+                + "If the user does not specify a period, default to the current month "
+                + "in YYYY-MM format (e.g. 2026-05).",
+                props(required("dealerCode", "string", "Dealer code"),
+                      required("payPeriod", "string", "Pay period in YYYY-MM format, e.g. 2026-05")));
 
         // --- Safe Actions (POST) ---
         register("calculate_loan", "Calculate monthly loan payment for a vehicle purchase",
