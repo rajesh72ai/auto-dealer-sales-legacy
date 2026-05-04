@@ -1,5 +1,6 @@
 package com.autosales.modules.chat;
 
+import com.autosales.modules.discovery.AutoDescriptorRouter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,11 +19,14 @@ public class ToolExecutor {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final AutoDescriptorRouter autoRouter;
 
     public ToolExecutor(@Value("${api.key}") String apiKey,
                         @Value("${server.port:8480}") int port,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper,
+                        AutoDescriptorRouter autoRouter) {
         this.objectMapper = objectMapper;
+        this.autoRouter = autoRouter;
         this.restClient = RestClient.builder()
                 .baseUrl("http://localhost:" + port)
                 .defaultHeader("X-API-Key", apiKey)
@@ -114,7 +118,13 @@ public class ToolExecutor {
                 // Capability Gap Logging (reusable across apps)
                 case "log_capability_gap" -> post("/api/capability-gaps", args);
 
-                default -> "Unknown tool: " + toolName;
+                // Auto-discovered tool fallback (B-discovery Path A) — synthetic
+                // names like "get_api_admin_lot-locations" are routed by the
+                // descriptor index built from ToolDescriptorExtractor at startup.
+                // Returns "Unknown tool: ..." only when the name isn't in either
+                // the curated switch above OR the synthetic index.
+                default -> autoRouter.route(toolName, args)
+                        .orElse("Unknown tool: " + toolName);
             };
             return truncate(result);
         } catch (Exception e) {

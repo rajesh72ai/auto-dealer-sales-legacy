@@ -12,6 +12,8 @@ import com.autosales.modules.agent.action.dto.ProposalResponse;
 import com.autosales.modules.agent.dto.AgentRequest;
 import com.autosales.modules.agent.dto.AgentResponse;
 import com.autosales.modules.agent.entity.AgentConversation;
+import com.autosales.modules.discovery.AutoToolDescriptor;
+import com.autosales.modules.discovery.KeywordRetrievalService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.vertexai.api.Tool;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,8 @@ class GeminiAgentServiceTest {
     @Mock private ActionService actionService;
     @Mock private ActionRegistry actionRegistry;
     @Mock private AgentToolCallAuditService auditService;
+    @Mock private KeywordRetrievalService keywordRetrieval;
+    @Mock private AutoToolGeminiBuilder autoBuilder;
 
     private final ObjectMapper mapper = new ObjectMapper();
     private GeminiAgentService agentService;
@@ -77,10 +81,12 @@ class GeminiAgentServiceTest {
         lenient().when(toolCatalog.getTools())
                 .thenReturn(Collections.<Tool>emptyList());
         lenient().when(actionRegistry.all()).thenReturn(Collections.emptyList());
+        lenient().when(keywordRetrieval.retrieve(anyString(), anyInt()))
+                .thenReturn(Collections.<AutoToolDescriptor>emptyList());
 
         agentService = new GeminiAgentService(client, toolCatalog, conversationService,
                 quotaService, costService, userContext, actionService, actionRegistry,
-                auditService, mapper);
+                auditService, mapper, keywordRetrieval, autoBuilder);
     }
 
     @Test

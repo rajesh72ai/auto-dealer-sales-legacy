@@ -13,8 +13,11 @@ import com.autosales.modules.agent.action.dto.ProposalResponse;
 import com.autosales.modules.agent.dto.AgentRequest;
 import com.autosales.modules.agent.dto.AgentResponse;
 import com.autosales.modules.agent.entity.AgentConversation;
+import com.autosales.modules.discovery.AutoToolDescriptor;
+import com.autosales.modules.discovery.KeywordRetrievalService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.vertexai.api.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -233,6 +236,13 @@ public class GeminiAgentService implements AgentService {
               - Never expose raw API keys, JWT tokens, or password hashes
             """;
 
+    /**
+     * How many auto-discovered descriptors to surface per turn. ~15 keeps the
+     * extra prompt overhead small (each FunctionDeclaration is ~50-100 tokens)
+     * while giving the model real coverage beyond the curated 32-tool catalog.
+     */
+    private static final int AUTO_DISCOVERY_TOP_K = 15;
+
     private final VertexAiGeminiClient client;
     private final GeminiToolCatalog toolCatalog;
     private final AgentConversationService conversationService;
@@ -243,6 +253,8 @@ public class GeminiAgentService implements AgentService {
     private final ActionRegistry actionRegistry;
     private final AgentToolCallAuditService auditService;
     private final ObjectMapper mapper;
+    private final KeywordRetrievalService keywordRetrieval;
+    private final AutoToolGeminiBuilder autoBuilder;
 
     /** Cached system instruction with read/write tool lists baked in. */
     private final String systemInstruction;
@@ -256,7 +268,9 @@ public class GeminiAgentService implements AgentService {
                               ActionService actionService,
                               ActionRegistry actionRegistry,
                               AgentToolCallAuditService auditService,
-                              ObjectMapper mapper) {
+                              ObjectMapper mapper,
+                              KeywordRetrievalService keywordRetrieval,
+                              AutoToolGeminiBuilder autoBuilder) {
         this.client = client;
         this.toolCatalog = toolCatalog;
         this.conversationService = conversationService;
@@ -267,6 +281,8 @@ public class GeminiAgentService implements AgentService {
         this.actionRegistry = actionRegistry;
         this.auditService = auditService;
         this.mapper = mapper;
+        this.keywordRetrieval = keywordRetrieval;
+        this.autoBuilder = autoBuilder;
         this.systemInstruction = buildSystemInstruction();
     }
 
@@ -330,7 +346,15 @@ public class GeminiAgentService implements AgentService {
                 }
             };
 
-            VertexAiGeminiClient.Reply reply = client.complete(messages, toolCatalog.getTools(), recorder);
+            // B-discovery Path A: keyword-score the auto-extracted catalog
+            // against the user's latest message and merge the top matches with
+            // the curated tool list. KeywordRetrievalService already filters
+            // to PUBLIC_READ/INTERNAL_READ + GET-only; AutoDescriptorRouter
+            // re-checks at invocation time.
+            List<Tool> mergedTools = mergeWithAutoDiscovered(
+                    toolCatalog.getTools(), latestUserMessage(messages));
+
+            VertexAiGeminiClient.Reply reply = client.complete(messages, mergedTools, recorder);
             String rawText = reply.text() == null ? "" : reply.text();
 
             // Extract proposal marker (if any) from the reply and run propose() in-process.
@@ -418,6 +442,66 @@ public class GeminiAgentService implements AgentService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getName() != null) return auth.getName();
         return "anonymous";
+    }
+
+    /**
+     * Walk the conversation in reverse and pull the most recent user-role
+     * message. That's what we feed to {@link KeywordRetrievalService} —
+     * the LLM's own intermediate model turns aren't useful retrieval
+     * input, only the human's actual question.
+     */
+    private String latestUserMessage(List<Map<String, Object>> messages) {
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            Map<String, Object> m = messages.get(i);
+            if ("user".equals(m.get("role"))) {
+                Object content = m.get("content");
+                return content == null ? "" : content.toString();
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Build the per-turn tools list — combines the curated
+     * {@link GeminiToolCatalog} declarations with auto-discovered
+     * {@link AutoToolDescriptor}s into a SINGLE {@link Tool}. Vertex AI
+     * rejects multi-Tool inputs when they contain function declarations
+     * ({@code INVALID_ARGUMENT: Multiple tools are supported only when
+     * they are all search tools}), so we flatten into one Tool here. When
+     * retrieval returns nothing, the curated list is returned unchanged.
+     */
+    private List<Tool> mergeWithAutoDiscovered(List<Tool> curated, String userMessage) {
+        List<AutoToolDescriptor> retrieved =
+                keywordRetrieval.retrieve(userMessage, AUTO_DISCOVERY_TOP_K);
+        if (retrieved.isEmpty()) {
+            return curated;
+        }
+
+        com.google.cloud.vertexai.api.Tool.Builder mergedBuilder =
+                com.google.cloud.vertexai.api.Tool.newBuilder();
+        java.util.Set<String> seenNames = new java.util.HashSet<>();
+        if (curated != null) {
+            for (Tool t : curated) {
+                for (com.google.cloud.vertexai.api.FunctionDeclaration fd : t.getFunctionDeclarationsList()) {
+                    mergedBuilder.addFunctionDeclarations(fd);
+                    seenNames.add(fd.getName());
+                }
+            }
+        }
+        int added = 0;
+        for (AutoToolDescriptor d : retrieved) {
+            if (seenNames.contains(d.getName())) continue; // curated wins on collision
+            com.google.cloud.vertexai.api.FunctionDeclaration fd = autoBuilder.toFunctionDeclaration(d);
+            if (fd == null) continue;
+            mergedBuilder.addFunctionDeclarations(fd);
+            seenNames.add(fd.getName());
+            added++;
+        }
+        if (added == 0) return curated;
+
+        log.info("Auto-discovery: surfaced {} extra read tools for this turn (top match name='{}')",
+                added, retrieved.get(0).getName());
+        return List.of(mergedBuilder.build());
     }
 
     /**
