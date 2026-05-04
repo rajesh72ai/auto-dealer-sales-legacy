@@ -43,26 +43,26 @@ public class ToolExecutor {
 
                 // Vehicles
                 case "list_vehicles" -> get("/api/vehicles?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_vehicle" -> get("/api/vehicles/%s", arg(args, "vin"));
                 case "decode_vin" -> get("/api/vehicles/%s/decode", arg(args, "vin"));
 
                 // Customers
                 case "list_customers" -> get("/api/customers?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_customer" -> get("/api/customers/%s", arg(args, "customerId"));
                 case "find_customer" -> get("/api/customers/search?type=LN&value=%s&dealerCode=%s&page=0&size=20",
                         arg(args, "lastName"), arg(args, "dealerCode"));
 
                 // Deals
                 case "list_deals" -> get("/api/deals?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_deal" -> get("/api/deals/%s", arg(args, "dealNumber"));
 
                 // Stock
                 case "get_stock_summary" -> get("/api/stock/summary?dealerCode=%s", arg(args, "dealerCode"));
                 case "get_stock_positions" -> get("/api/stock/positions?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_stock_aging" -> get("/api/stock/aging?dealerCode=%s", arg(args, "dealerCode"));
                 case "get_stock_alerts" -> get("/api/stock/alerts?dealerCode=%s", arg(args, "dealerCode"));
 
@@ -72,24 +72,24 @@ public class ToolExecutor {
 
                 // Finance
                 case "list_finance_apps" -> get("/api/finance/applications?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
 
                 // Registration & Warranty
                 case "list_registrations" -> get("/api/registrations?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_warranty_by_vin" -> get("/api/warranties/by-vin/%s", arg(args, "vin"));
                 case "list_warranty_claims" -> get("/api/warranty-claims?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "list_recalls" -> get("/api/recalls?page=%s&size=%s",
-                        arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "page", "0"), arg(args, "size", "50"));
 
                 // Leads
                 case "list_leads" -> get("/api/leads?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
 
                 // Production & Shipments
                 case "list_shipments" -> get("/api/production/shipments?dealer=%s&status=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "status", ""), arg(args, "page", "0"), arg(args, "size", "10"));
+                        arg(args, "dealerCode"), arg(args, "status", ""), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_shipment" -> get("/api/production/shipments/%s", arg(args, "shipmentId"));
 
                 // Batch & Reports

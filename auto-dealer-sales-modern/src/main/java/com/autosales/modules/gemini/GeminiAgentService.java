@@ -130,6 +130,34 @@ public class GeminiAgentService implements AgentService {
             commissions?"), you may emit multiple function_call parts in one
             response — they will execute in parallel.
 
+            ### Filter / sort / aggregate IN YOUR REASONING (IMPORTANT)
+            When the user asks for a filter, sort, or aggregation that the
+            tool does NOT directly expose (e.g. "deals from the last 7 days",
+            "vehicles aged > 90 days sorted by date", "average finance amount
+            this month"), do NOT decline. Instead:
+
+              1. Call the closest list_* tool with size=100 (the page-size
+                 cap) so you have a generous set of records to work with.
+              2. Filter / sort / aggregate the returned records in your own
+                 reasoning — examine the relevant fields (dealDate,
+                 stockedDate, financeAmount, etc.) and compute the answer.
+              3. Return only the rows that match. State the filter you
+                 applied so the user can verify ("filtered to dealDate >=
+                 2026-04-26").
+              4. If the page-100 result was full (suggesting more matches
+                 exist beyond the first page), say so honestly: "showing
+                 100 of N total — let me know if you want more."
+
+            Decline only when the data volume genuinely exceeds what one
+            page-100 fetch can cover (e.g. cross-dealer scans of thousands
+            of rows, or aggregations over months of history). In those
+            cases, log a capability gap with category=REPORT_GAP and
+            note that a SQL surface (planned) would handle it natively.
+
+            DO NOT decline by saying "the tool only supports X filter" when
+            you can fetch and filter yourself — that's the work the agent
+            exists to do.
+
             ## Write tools (Write-Tool Protocol — IMPORTANT)
 
             For these write actions, DO NOT use function calling. Instead, at

@@ -22,7 +22,7 @@ public class ToolRegistry {
         register("list_vehicles", "List vehicles for a dealer with pagination",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         register("get_vehicle", "Get vehicle details by VIN",
                 props(required("vin", "string", "Vehicle Identification Number")));
@@ -34,7 +34,7 @@ public class ToolRegistry {
         register("list_customers", "List customers for a dealer",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         register("get_customer", "Get customer details by ID",
                 props(required("customerId", "integer", "Customer ID")));
@@ -52,7 +52,7 @@ public class ToolRegistry {
         register("list_deals", "List deals for a dealer",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         register("get_deal", "Get deal details by deal number",
                 props(required("dealNumber", "string", "Deal number, e.g. DL01000001")));
@@ -64,7 +64,7 @@ public class ToolRegistry {
         register("get_stock_positions", "Get stock positions with pagination",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         register("get_stock_aging", "Get aging report showing how long vehicles have been in stock",
                 props(required("dealerCode", "string", "Dealer code")));
@@ -83,13 +83,13 @@ public class ToolRegistry {
         register("list_finance_apps", "List finance applications for a dealer",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         // --- Registration & Warranty ---
         register("list_registrations", "List vehicle registrations for a dealer",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         register("get_warranty_by_vin", "Get warranty coverage details for a vehicle",
                 props(required("vin", "string", "Vehicle Identification Number")));
@@ -97,17 +97,17 @@ public class ToolRegistry {
         register("list_warranty_claims", "List warranty claims for a dealer",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         register("list_recalls", "List recall campaigns",
                 props(optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         // --- Leads & CRM ---
         register("list_leads", "List customer leads for a dealer",
                 props(required("dealerCode", "string", "Dealer code"),
                       optional("page", "integer", "Page number (default 0)"),
-                      optional("size", "integer", "Page size (default 10)")));
+                      optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         // --- Batch & Reports ---
         register("get_batch_jobs", "Get batch job status and history", props());
