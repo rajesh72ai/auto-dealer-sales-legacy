@@ -168,6 +168,40 @@ public class ToolRegistry {
                 props(required("customerId", "integer", "Customer ID"),
                       required("dealerCode", "string", "Dealer code"),
                       required("bureau", "string", "Credit bureau: EXPERIAN, EQUIFAX, or TRANSUNION")));
+
+        // --- Capability gap logging (telemetry; not a business write) ---
+        // Call BEFORE declining a user request when no matching read tool exists
+        // or no ActionHandler is registered for a write. The fields here MUST
+        // match CapabilityGapController's request body keys exactly — drift
+        // here means rows persist with controller-default fallbacks (the bug
+        // observed pre-fix: requestedCapability="unknown", category="UNKNOWN",
+        // userInput="", scenarioDescription="", agentReasoning="").
+        register("log_capability_gap",
+                "Log a capability gap to the product backlog when the user asks for something "
+                + "the agent's tools cannot do (no matching read tool, no ActionHandler for a "
+                + "write, missing data, etc.). Call this BEFORE declining to the user, with all "
+                + "fields populated from the conversation context. Never call with empty fields.",
+                props(required("requestedCapability", "string",
+                              "Short label of what the user asked for (e.g. 'filter deals by date range', "
+                              + "'delete user', 'export warranty claims to CSV')"),
+                      required("category", "string",
+                              "One of: READ_GAP (data the agent can't fetch), WRITE_GAP (action the agent "
+                              + "can't perform), INTEGRATION_GAP (external system not wired), REPORT_GAP "
+                              + "(analytic the agent can't compute), UI_GAP (workflow that belongs in the UI)"),
+                      required("userInput", "string",
+                              "The user's original prompt verbatim — copy from the most recent user message"),
+                      required("scenarioDescription", "string",
+                              "One-sentence description of the business scenario the user was trying to "
+                              + "accomplish (e.g. 'Sales manager reviewing deals closed in the last week')"),
+                      required("agentReasoning", "string",
+                              "One-sentence explanation of why this couldn't be served (e.g. 'list_deals "
+                              + "tool does not expose a date filter and only returns 10 rows by default')"),
+                      optional("priorityHint", "string",
+                              "LOW (cosmetic / nice-to-have), MEDIUM (workaround exists), HIGH (blocks a "
+                              + "common business case). Default MEDIUM."),
+                      optional("suggestedAlternative", "string",
+                              "Closest workaround the agent CAN perform, if any (e.g. 'list all deals "
+                              + "and review manually')")));
     }
 
     public List<Map<String, Object>> getToolDefinitions() {

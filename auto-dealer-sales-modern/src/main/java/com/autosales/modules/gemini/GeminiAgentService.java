@@ -189,12 +189,27 @@ public class GeminiAgentService implements AgentService {
             example a query you cannot answer because no matching read tool
             exists, or a write you cannot perform because no ActionHandler is
             registered — BEFORE declining to the user, call the tool
-            log_capability_gap with:
-              - description: a one-sentence summary of what the user asked for
-              - userMessage: the user's original prompt verbatim
-              - severity: "LOW" (cosmetic / nice-to-have), "MEDIUM" (affects a
-                workflow but workaround exists), or "HIGH" (blocks a common
-                business case)
+            log_capability_gap with ALL of these fields populated from the
+            conversation context (NEVER call with empty fields):
+
+              - requestedCapability: short label of what the user asked for
+                (e.g. "filter deals by date range", "delete user")
+              - category: READ_GAP (data the agent can't fetch),
+                WRITE_GAP (action the agent can't perform),
+                INTEGRATION_GAP (external system not wired),
+                REPORT_GAP (analytic the agent can't compute),
+                UI_GAP (workflow that belongs in the UI)
+              - userInput: the user's original prompt VERBATIM — copy the
+                exact text from the most recent user message
+              - scenarioDescription: one sentence describing the business
+                scenario (e.g. "Sales manager reviewing deals closed in the
+                last week")
+              - agentReasoning: one sentence on WHY this couldn't be served
+                (e.g. "list_deals tool does not expose a date filter")
+              - priorityHint: LOW / MEDIUM / HIGH (default MEDIUM)
+              - suggestedAlternative: optional — the closest workaround the
+                agent CAN perform
+
             Then tell the user honestly that the capability isn't available
             yet, has been logged for the team, and offer the closest workaround
             you can perform. NEVER hallucinate data to fill the gap.
