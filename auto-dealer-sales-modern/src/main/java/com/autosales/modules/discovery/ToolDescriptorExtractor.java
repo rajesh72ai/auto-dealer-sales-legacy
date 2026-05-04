@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -147,6 +148,19 @@ public class ToolDescriptorExtractor {
         List<Map<String, String>> params = extractParams(handler);
         String description = synthDescription(verb, path, javaMethod);
         String safety = classifySafety(verb, path, proposeProtectedDescriptors);
+
+        // Lesson 4 reinforcement: a path-prefix-based classification cannot
+        // see Spring @PreAuthorize role gates. If the endpoint's effective
+        // role list omits AGENT_SERVICE, the agent's X-API-Key route will
+        // 403 at runtime — discovering it is worse than not discovering it.
+        // Downgrade reads to AGENT_NO so retrieval skips them entirely.
+        // (Writes are already filtered out of retrieval; classification stays
+        // for documentation accuracy.)
+        if (("PUBLIC_READ".equals(safety) || "INTERNAL_READ".equals(safety))
+                && !isAgentReachable(handler)) {
+            safety = "AGENT_NO";
+        }
+
         List<String> tags = classifyTags(verb, path, safety);
 
         return AutoToolDescriptor.builder()
@@ -205,6 +219,33 @@ public class ToolDescriptorExtractor {
             out.add(param);
         }
         return out;
+    }
+
+    /**
+     * Decide whether the agent's service-account auth surface (X-API-Key
+     * granting only ROLE_AGENT_SERVICE) can actually reach this handler.
+     *
+     * <p>Spring resolution: a method-level {@code @PreAuthorize} overrides
+     * the class-level annotation. We check method first, fall back to
+     * class. No annotation at all → permissive (any authenticated caller).
+     *
+     * <p>The role-list parsing here is a string match on the SpEL
+     * expression — good enough for our hand-written controllers, all of
+     * which use {@code hasAnyRole('A','B',...)}. If we ever start using
+     * computed expressions (rare), this would need a real SpEL evaluator.
+     */
+    private static boolean isAgentReachable(HandlerMethod handler) {
+        PreAuthorize ann = handler.getMethodAnnotation(PreAuthorize.class);
+        if (ann == null) {
+            ann = handler.getBeanType().getAnnotation(PreAuthorize.class);
+        }
+        if (ann == null) {
+            // No annotation → endpoint allows any authenticated principal,
+            // including ROLE_AGENT_SERVICE. Reachable.
+            return true;
+        }
+        String expr = ann.value();
+        return expr != null && expr.contains("AGENT_SERVICE");
     }
 
     /**
