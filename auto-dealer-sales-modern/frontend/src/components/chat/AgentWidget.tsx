@@ -25,9 +25,12 @@ import {
   Copy,
   Check,
   ShieldCheck,
+  ShieldAlert,
   CheckCircle2,
   XCircle,
   Clock,
+  HelpCircle,
+  UserCircle as UserCircleIcon,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -43,8 +46,17 @@ import {
   listConversations,
   getConversation,
   deleteConversation,
+  fetchCapabilities,
 } from '@/api/agent';
-import type { AgentProposal, ConversationSummary, TurnUsage } from '@/api/agent';
+import type {
+  AgentCapability,
+  AgentProposal,
+  AutoDiscoveredTile,
+  ConversationSummary,
+  TurnUsage,
+} from '@/api/agent';
+import { CapabilityAtlas } from './CapabilityAtlas';
+import { CapabilitySlashMenu } from './CapabilitySlashMenu';
 import { confirmProposal, rejectProposal, undoExecutedAction } from '@/api/actions';
 import { getMyQuota } from '@/api/agentUsage';
 import type { QuotaStatus } from '@/api/agentUsage';
@@ -64,6 +76,23 @@ interface DisplayMessage {
   proposalAuditId?: number;
   proposalUndoExpiresAt?: number; // epoch ms
 }
+
+// Capability chip styling — yaml category → icon + accent class. Mirrors
+// the Atlas modal's CATEGORY_STYLE so chips and modal stay visually
+// consistent. Adding a new category needs entries in both places (drift is
+// tolerable here — visual only, not security-critical).
+const CHIP_CATEGORY_STYLE: Record<string, { Icon: typeof Car; accent: string }> = {
+  INVENTORY: { Icon: Car, accent: 'border-blue-200 bg-blue-50 text-blue-700' },
+  CUSTOMERS: { Icon: UserCircleIcon, accent: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+  DEALS: { Icon: TrendingUp, accent: 'border-violet-200 bg-violet-50 text-violet-700' },
+  FINANCE: { Icon: Banknote, accent: 'border-amber-200 bg-amber-50 text-amber-700' },
+  WARRANTY: { Icon: ShieldCheck, accent: 'border-rose-200 bg-rose-50 text-rose-700' },
+  INCENTIVES: { Icon: Sparkles, accent: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700' },
+  REPORTS: { Icon: FileText, accent: 'border-slate-200 bg-slate-50 text-slate-700' },
+  ADMIN: { Icon: Monitor, accent: 'border-zinc-200 bg-zinc-50 text-zinc-700' },
+  CALC: { Icon: Banknote, accent: 'border-amber-200 bg-amber-50 text-amber-700' },
+};
+const CHIP_FALLBACK_STYLE = { Icon: Sparkles, accent: 'border-gray-200 bg-gray-50 text-gray-700' };
 
 interface WorkflowRecipe {
   id: string;
@@ -182,6 +211,17 @@ function AgentWidget() {
   // and a visible "Click again to confirm" button cannot be mistaken for
   // a normal Execute even if the user walks away and comes back.
   const [armedIrreversibleIdx, setArmedIrreversibleIdx] = useState<number | null>(null);
+
+  // Discovery UX — capability catalog drives chips, slash menu, atlas modal.
+  // Loaded once when the widget first opens (auth required for /api/agent/capabilities).
+  const [capabilities, setCapabilities] = useState<AgentCapability[]>([]);
+  const [autoDiscoveredTile, setAutoDiscoveredTile] = useState<AutoDiscoveredTile | null>(null);
+  const [personaRole, setPersonaRole] = useState<string | null>(null);
+  const [atlasOpen, setAtlasOpen] = useState(false);
+  // When the input begins with "/" and no space yet, slashFilter holds the
+  // text typed AFTER the slash; null means the menu is closed.
+  const [slashFilter, setSlashFilter] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -201,6 +241,21 @@ function AgentWidget() {
     });
     getMyQuota().then(setQuota);
   }, []);
+
+  // Lazy-load capabilities the first time the widget opens — endpoint is
+  // auth-gated so we can't fetch on mount before login. Re-fetch isn't
+  // needed within a session; the catalog is yaml + boot-time, doesn't
+  // change at runtime.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (capabilities.length > 0) return;
+    fetchCapabilities().then((catalog) => {
+      if (!catalog) return;
+      setCapabilities(catalog.capabilities ?? []);
+      setAutoDiscoveredTile(catalog.autoDiscoveredTile);
+      setPersonaRole(catalog.personaRole);
+    });
+  }, [isOpen, capabilities.length]);
 
   const refreshQuota = useCallback(() => {
     getMyQuota().then(setQuota);
@@ -643,6 +698,13 @@ function AgentWidget() {
             </div>
             <div className="flex items-center gap-1">
               <button
+                onClick={() => setAtlasOpen(true)}
+                className="rounded-lg p-1.5 text-violet-200 transition-colors hover:bg-violet-600 hover:text-white"
+                title="What can the agent do? (Capability Atlas)"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </button>
+              <button
                 onClick={handleNewChat}
                 className="rounded-lg p-1.5 text-violet-200 transition-colors hover:bg-violet-600 hover:text-white"
                 title="New chat"
@@ -735,46 +797,99 @@ function AgentWidget() {
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-50">
                     <Sparkles className="h-5 w-5 text-violet-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-800">
-                      Pick a workflow to get started
+                      Try one of these
                     </p>
                     <p className="text-[11px] text-gray-500">
-                      Click a card, replace the highlighted placeholder with your own value, then press Enter.
+                      Click to load · type <kbd className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">/</kbd> for menu · click <HelpCircle className="inline h-3 w-3 align-text-top" /> for the full atlas{personaRole ? ` · sorted for ${personaRole}` : ''}
                     </p>
                   </div>
                 </div>
-                <div
-                  className={`grid gap-2 ${
-                    size === 'compact' ? 'grid-cols-1' : 'grid-cols-2'
-                  }`}
-                >
-                  {WORKFLOW_RECIPES.map((r) => {
-                    const Icon = r.Icon;
-                    return (
-                      <button
-                        key={r.id}
-                        onClick={() => handlePickTemplate(r.template)}
-                        disabled={isLoading}
-                        className="group flex items-start gap-2.5 rounded-xl border border-gray-200 bg-white p-2.5 text-left transition-colors hover:border-violet-300 hover:bg-violet-50 disabled:opacity-40"
-                      >
-                        <div
-                          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${r.accent}`}
+                {/* Persona-sorted top capabilities — 8 chips fit comfortably; full
+                    browse is in the Atlas modal accessed via the header "?" icon.
+                    Falls back to legacy WORKFLOW_RECIPES if the catalog hasn't
+                    loaded yet (offline / pre-auth). */}
+                {capabilities.length > 0 ? (
+                  <div className={`grid gap-2 ${size === 'compact' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {capabilities.slice(0, 8).map((c) => {
+                      const style = CHIP_CATEGORY_STYLE[c.category] ?? CHIP_FALLBACK_STYLE;
+                      const Icon = style.Icon;
+                      const firstPrompt = c.examplePrompts[0] ?? c.displayName;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => handlePickTemplate(firstPrompt)}
+                          disabled={isLoading}
+                          className="group flex items-start gap-2.5 rounded-xl border border-gray-200 bg-white p-2.5 text-left transition-colors hover:border-violet-300 hover:bg-violet-50 disabled:opacity-40"
                         >
-                          <Icon className="h-4 w-4" />
-                        </div>
+                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${style.accent}`}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                              <p className="truncate text-[13px] font-semibold text-gray-800 group-hover:text-violet-700">
+                                {c.displayName}
+                              </p>
+                              {c.requiresProposal && (
+                                <ShieldAlert
+                                  className="h-3 w-3 flex-shrink-0 text-amber-600"
+                                  aria-label="Requires confirmation"
+                                />
+                              )}
+                            </div>
+                            <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-gray-500">
+                              {c.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {autoDiscoveredTile && (
+                      <button
+                        onClick={() => setAtlasOpen(true)}
+                        className="group col-span-full flex items-center justify-between gap-2.5 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-2.5 text-left transition-colors hover:border-indigo-400 hover:bg-indigo-50"
+                        title="Open the Capability Atlas"
+                      >
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-gray-800 group-hover:text-violet-700">
-                            {r.name}
+                          <p className="truncate text-[12px] font-semibold text-indigo-800">
+                            {autoDiscoveredTile.displayName}
                           </p>
-                          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-gray-500">
-                            {r.description}
+                          <p className="mt-0.5 line-clamp-1 text-[10px] text-indigo-700/80">
+                            {autoDiscoveredTile.description}
                           </p>
                         </div>
+                        <Shuffle className="h-3.5 w-3.5 flex-shrink-0 text-indigo-500" />
                       </button>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`grid gap-2 ${size === 'compact' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {WORKFLOW_RECIPES.map((r) => {
+                      const Icon = r.Icon;
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => handlePickTemplate(r.template)}
+                          disabled={isLoading}
+                          className="group flex items-start gap-2.5 rounded-xl border border-gray-200 bg-white p-2.5 text-left transition-colors hover:border-violet-300 hover:bg-violet-50 disabled:opacity-40"
+                        >
+                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${r.accent}`}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-semibold text-gray-800 group-hover:text-violet-700">
+                              {r.name}
+                            </p>
+                            <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-gray-500">
+                              {r.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1178,19 +1293,46 @@ function AgentWidget() {
               <p className="mb-1.5 text-[11px] font-medium text-amber-700">{inputHint}</p>
             )}
             <div className="flex items-end gap-2">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  if (inputHint) setInputHint(null);
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask the agent… Enter to send, Shift+Enter for newline"
-                disabled={isLoading}
-                rows={3}
-                className="flex-1 resize-none overflow-y-auto rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm leading-snug text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:opacity-50"
-              />
+              <div className="relative flex-1">
+                {slashFilter !== null && capabilities.length > 0 && (
+                  <CapabilitySlashMenu
+                    filter={slashFilter}
+                    capabilities={capabilities}
+                    onPick={(prompt) => {
+                      setInput(prompt);
+                      setSlashFilter(null);
+                      requestAnimationFrame(() => {
+                        const el = inputRef.current;
+                        if (!el) return;
+                        el.focus();
+                        el.setSelectionRange(prompt.length, prompt.length);
+                      });
+                    }}
+                    onClose={() => setSlashFilter(null)}
+                  />
+                )}
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setInput(v);
+                    if (inputHint) setInputHint(null);
+                    // Slash-menu opens only while input is "/" or "/<word>"
+                    // with no whitespace yet — typing a space dismisses it.
+                    if (v.startsWith('/') && !/\s/.test(v)) {
+                      setSlashFilter(v.slice(1));
+                    } else if (slashFilter !== null) {
+                      setSlashFilter(null);
+                    }
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask the agent… Enter to send, Shift+Enter for newline, / for capability menu"
+                  disabled={isLoading}
+                  rows={3}
+                  className="w-full resize-none overflow-y-auto rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm leading-snug text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:opacity-50"
+                />
+              </div>
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
@@ -1207,6 +1349,19 @@ function AgentWidget() {
           </div>
         </div>
       )}
+
+      {/* Capability Atlas — full searchable browse, opens via the "?" header
+          icon. Mounts at the root so the backdrop can cover the widget. */}
+      <CapabilityAtlas
+        isOpen={atlasOpen}
+        onClose={() => setAtlasOpen(false)}
+        capabilities={capabilities}
+        autoDiscoveredTile={autoDiscoveredTile}
+        personaRole={personaRole}
+        onPickPrompt={(prompt) => {
+          handlePickTemplate(prompt);
+        }}
+      />
     </>
   );
 }

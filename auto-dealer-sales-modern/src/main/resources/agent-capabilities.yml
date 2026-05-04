@@ -1,0 +1,297 @@
+# Agent capability catalog — human-curated metadata over the auto-reflected
+# ToolRegistry (reads) + ActionRegistry (writes). This file is the source of
+# truth for the user-facing Discovery UX (chips, slash menu, capability atlas).
+#
+# Drift discipline (CapabilityCatalogService boot-time invariant):
+#   - Every `backedBy` entry MUST resolve to a registered tool or ActionHandler.
+#   - Every registered tool/action MUST be referenced by exactly one capability,
+#     UNLESS listed in `internalTools` below (internal-only, never surfaced).
+#   - Boot logs a WARN (dev) / FAIL (gcp profile) on drift.
+#
+# When you add a new tool or ActionHandler, you also add a yaml entry. The
+# scaffolding command (parked) can auto-generate a template — for now, copy
+# an existing block and fill in displayName + examplePrompts + personas.
+
+# Tools deliberately hidden from the user (telemetry, internal plumbing).
+# Drift check tolerates these — they exist in the registry but never appear
+# as a capability.
+internalTools:
+  - log_capability_gap
+
+# Auto-discovered surface — single tile that represents the ~200 admin
+# endpoints the agent can reach via keyword retrieval. Doesn't grow as we
+# add endpoints; updates the count from the live catalog at request time.
+autoDiscoveredTile:
+  id: auto_admin_endpoints
+  displayName: "Ask anything else from our admin endpoints"
+  description: "The agent will keyword-match your question against {{count}}+ auto-discovered admin endpoints. Read-only. Federal/internal data, dealer config, lookup tables — try it with anything not covered above."
+  examplePrompts:
+    - "List our lot locations"
+    - "Show all model masters we sell"
+    - "What PDI checklist items exist?"
+
+capabilities:
+
+  # =========================================================================
+  # INVENTORY
+  # =========================================================================
+
+  - id: stock_overview
+    displayName: "Inventory snapshot"
+    description: "Total stock on hand, in transit, sold, dollar value — at a glance"
+    category: INVENTORY
+    examplePrompts:
+      - "How many vehicles in my dealership? Brief."
+      - "Stock summary for DLR01"
+    backedBy: [get_stock_summary, list_vehicles, get_stock_positions]
+    personas: [SALESPERSON, MANAGER]
+    demoPriority: 10
+
+  - id: stock_aging
+    displayName: "Aging inventory"
+    description: "Vehicles aged > 60 days are a warning; agent will flag the risk in its reasoning"
+    category: INVENTORY
+    examplePrompts:
+      - "What's the stock aging report for DLR01? Anything aged > 60 days is a concern."
+      - "Show low-stock alerts for DLR01"
+    backedBy: [get_stock_aging, get_stock_alerts]
+    personas: [MANAGER, SALESPERSON]
+    demoPriority: 20
+
+  - id: vehicle_lookup
+    displayName: "Look up a vehicle"
+    description: "VIN decode + warranty + federal NHTSA lookup, all in one"
+    category: INVENTORY
+    examplePrompts:
+      - "Decode VIN 1HGCM82633A004352"
+      - "Are there any federal recalls on VIN 1HGCM82633A004352?"
+    backedBy: [get_vehicle, decode_vin, nhtsa_vin_decode]
+    personas: [SALESPERSON, MANAGER, FINANCE]
+    demoPriority: 30
+
+  - id: floor_plan_exposure
+    displayName: "Floor plan exposure"
+    description: "Floor-financed vehicles and risk report — works across all 12 dealerships in one prompt"
+    category: INVENTORY
+    examplePrompts:
+      - "What's our floor plan exposure right now? Anything risky? Do it for all 12 dealerships."
+      - "Show floor-financed vehicles for DLR01"
+    backedBy: [get_floorplan_vehicles, get_floorplan_exposure]
+    personas: [MANAGER, FINANCE]
+    demoPriority: 40
+
+  - id: mark_arrived
+    displayName: "Mark a vehicle as arrived"
+    description: "Receive a vehicle into stock (proposal flow)"
+    category: INVENTORY
+    examplePrompts:
+      - "Mark VIN 1HGCM82633A004352 as arrived at DLR01"
+    backedBy: [mark_arrived]
+    personas: [CLERK, MANAGER]
+    demoPriority: 110
+    requiresProposal: true
+
+  - id: transfer_stock
+    displayName: "Transfer a vehicle between dealers"
+    description: "Move a vehicle from one dealership to another (proposal flow)"
+    category: INVENTORY
+    examplePrompts:
+      - "Transfer VIN 1HGCM82633A004352 from DLR01 to DLR03"
+    backedBy: [transfer_stock]
+    personas: [MANAGER]
+    demoPriority: 120
+    requiresProposal: true
+
+  # =========================================================================
+  # CUSTOMERS & LEADS
+  # =========================================================================
+
+  - id: find_customer
+    displayName: "Find a customer"
+    description: "Last-name search; preferred over the paginated list"
+    category: CUSTOMERS
+    examplePrompts:
+      - "Find customer Jane Smith in DLR01"
+      - "Look up customer #82"
+    backedBy: [find_customer, list_customers, get_customer]
+    personas: [SALESPERSON, FINANCE, MANAGER]
+    demoPriority: 25
+
+  - id: create_customer
+    displayName: "Onboard a new customer"
+    description: "Capture address, phone, contact preferences (proposal flow)"
+    category: CUSTOMERS
+    examplePrompts:
+      - "New customer Jane Smith, phone 248-555-0143, 123 Main St, Detroit, MI 48201"
+    backedBy: [create_customer]
+    personas: [SALESPERSON]
+    demoPriority: 50
+    requiresProposal: true
+
+  - id: lead_pipeline
+    displayName: "Active leads"
+    description: "Lead pipeline by dealer; agent filters by source, date, or salesperson in reasoning"
+    category: CUSTOMERS
+    examplePrompts:
+      - "List leads for DLR01"
+      - "Which leads were created this week?"
+    backedBy: [list_leads]
+    personas: [SALESPERSON, MANAGER]
+    demoPriority: 35
+
+  - id: create_lead
+    displayName: "Capture a new lead"
+    description: "Create a lead for an existing customer; agent verifies the customer first (proposal flow)"
+    category: CUSTOMERS
+    examplePrompts:
+      - "Create a lead for Robert Garcia, source REFERRAL, interested in 2026 Civic"
+      - "Create a new lead for Jane Smith, phone 248-555-9999, source REFERRAL"
+    backedBy: [create_lead]
+    personas: [SALESPERSON]
+    demoPriority: 45
+    requiresProposal: true
+
+  # =========================================================================
+  # DEALS
+  # =========================================================================
+
+  - id: deal_lookup
+    displayName: "Recent deals"
+    description: "List deals; the agent will filter by date, status, or salesperson in reasoning"
+    category: DEALS
+    examplePrompts:
+      - "List deals from the past week for DLR01"
+      - "Show deals from the last 7 days, sorted by deal date"
+    backedBy: [list_deals, get_deal]
+    personas: [SALESPERSON, MANAGER]
+    demoPriority: 15
+
+  - id: deal_lifecycle
+    displayName: "Move a deal forward"
+    description: "Create, approve, add trade-in — propose-confirm-execute with audit + 30s undo"
+    category: DEALS
+    examplePrompts:
+      - "Approve deal DL01000123"
+      - "Add trade-in to deal DL01000123: 2018 Civic, VIN 19XFB2F50JE000001, $9,500"
+    backedBy: [create_deal, approve_deal, add_trade_in]
+    personas: [MANAGER, SALESPERSON]
+    demoPriority: 55
+    requiresProposal: true
+
+  # =========================================================================
+  # FINANCE
+  # =========================================================================
+
+  - id: finance_apps
+    displayName: "Finance applications"
+    description: "Active F&I apps; submit new applications via proposal"
+    category: FINANCE
+    examplePrompts:
+      - "List finance applications for DLR01"
+      - "Submit a finance app for deal DL01000123, $32K, 60 months"
+    backedBy: [list_finance_apps, submit_finance_app]
+    personas: [FINANCE, MANAGER]
+    demoPriority: 60
+
+  - id: credit_check
+    displayName: "Run a credit check"
+    description: "Pull credit from EXPERIAN, EQUIFAX, or TRANSUNION for a customer"
+    category: FINANCE
+    examplePrompts:
+      - "Run a credit check for customer #82 via EXPERIAN"
+    backedBy: [run_credit_check]
+    personas: [FINANCE]
+    demoPriority: 65
+
+  - id: payment_calculators
+    displayName: "Payment calculators"
+    description: "Loan and lease payment estimators — pure math, no DB write"
+    category: FINANCE
+    examplePrompts:
+      - "Calculate a $32,000 loan at 5.9% APR over 60 months with $3,000 down"
+      - "Lease payment for $40,000 cap cost, 36 months, residual 55%"
+    backedBy: [calculate_loan, calculate_lease]
+    personas: [SALESPERSON, FINANCE]
+    demoPriority: 70
+
+  # =========================================================================
+  # WARRANTY & RECALLS
+  # =========================================================================
+
+  - id: warranty_recall
+    displayName: "Warranty & recalls"
+    description: "Warranty status, claims, recall lookup — local DB + federal NHTSA in one query"
+    category: WARRANTY
+    examplePrompts:
+      - "Are there any federal recalls on VIN 1HGCM82633A004352?"
+      - "List active warranty claims for DLR01"
+      - "Get warranty coverage for VIN 1HGCM82633A004352"
+    backedBy: [get_warranty_by_vin, list_warranty_claims, list_recalls, nhtsa_recall_lookup]
+    personas: [SALESPERSON, MANAGER, CLERK]
+    demoPriority: 75
+
+  - id: close_warranty_claim
+    displayName: "Close a warranty claim"
+    description: "Mark a claim resolved (proposal flow)"
+    category: WARRANTY
+    examplePrompts:
+      - "Close warranty claim CLM-2026-001"
+    backedBy: [close_warranty_claim]
+    personas: [MANAGER, FINANCE]
+    demoPriority: 80
+    requiresProposal: true
+
+  # =========================================================================
+  # INCENTIVES
+  # =========================================================================
+
+  - id: incentives
+    displayName: "Active incentives"
+    description: "Rebates, low-APR offers, lease specials; apply an incentive to a deal via proposal"
+    category: INCENTIVES
+    examplePrompts:
+      - "What incentive programs do we have available right now?"
+      - "Apply incentive INC001 to deal DL01000123"
+    backedBy: [list_incentives, get_incentive, apply_incentive]
+    personas: [SALESPERSON, MANAGER, FINANCE]
+    demoPriority: 50
+
+  # =========================================================================
+  # REPORTS
+  # =========================================================================
+
+  - id: reports
+    displayName: "Daily reports"
+    description: "Daily sales + commissions + batch jobs — compound queries fan out in one turn"
+    category: REPORTS
+    examplePrompts:
+      - "Show me the daily sales report and the commissions report for DLR01"
+      - "What batch jobs ran today?"
+    backedBy: [get_daily_sales_report, get_commissions_report, get_batch_jobs]
+    personas: [MANAGER, FINANCE, ADMIN]
+    demoPriority: 90
+
+  # =========================================================================
+  # ADMIN
+  # =========================================================================
+
+  - id: dealer_directory
+    displayName: "Dealer directory"
+    description: "All 12 dealerships — codes, addresses, contacts"
+    category: ADMIN
+    examplePrompts:
+      - "List all our dealerships"
+      - "Show details for dealer DLR03"
+    backedBy: [list_dealers, get_dealer]
+    personas: [ADMIN, MANAGER]
+    demoPriority: 95
+
+  - id: registrations
+    displayName: "Vehicle registrations"
+    description: "Registration records by dealer"
+    category: ADMIN
+    examplePrompts:
+      - "List registrations for DLR01"
+    backedBy: [list_registrations]
+    personas: [CLERK, MANAGER]
+    demoPriority: 100

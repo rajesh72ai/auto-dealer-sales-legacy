@@ -327,3 +327,46 @@ export async function deleteConversation(id: string): Promise<boolean> {
   });
   return response.ok;
 }
+
+// =============================================================================
+// Capability catalog — drives chips, slash menu, and Capability Atlas modal.
+// Backed by /api/agent/capabilities (CapabilityCatalogService).
+// =============================================================================
+
+export interface AgentCapability {
+  id: string;
+  displayName: string;
+  description: string;
+  category: string;
+  examplePrompts: string[];
+  backedBy: string[];
+  personas: string[];
+  demoPriority: number;
+  requiresProposal: boolean;
+  displayPriority: number;
+}
+
+export interface AutoDiscoveredTile {
+  id: string;
+  displayName: string;
+  description: string;
+  examplePrompts: string[];
+}
+
+export interface CapabilityCatalog {
+  personaRole: string | null;
+  capabilities: AgentCapability[];
+  autoDiscoveredTile: AutoDiscoveredTile | null;
+}
+
+const CAPABILITIES_URL = '/api/agent/capabilities';
+
+export async function fetchCapabilities(): Promise<CapabilityCatalog | null> {
+  try {
+    const response = await fetch(CAPABILITIES_URL, { headers: authHeaders() });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
