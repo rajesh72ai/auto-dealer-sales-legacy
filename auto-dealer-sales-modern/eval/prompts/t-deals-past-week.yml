@@ -1,0 +1,19 @@
+id: t-deals-past-week
+description: L11 date anchor — "past week" must use today's date as anchor, not the model's training-data prior (often 2024)
+prompt: "Show me deals from the past week for DLR02"
+auth:
+  user_id: EVALUSER
+  password: Admin123
+expect:
+  # Reply must reference current-era dates, not 2024 — this is the L11
+  # regression guard. If the date anchor breaks, the agent falls back to
+  # 2024 ranges and produces empty results, which would surface here.
+  reply_not_contains:
+    - "2024"
+    - "2023"
+  tool_calls_include:
+    - list_deals
+  latency_ms_max: 30000
+  tokens_total_max: 19000
+  proposal: null
+flaky: false

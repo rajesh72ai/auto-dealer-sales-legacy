@@ -1,0 +1,22 @@
+id: t-create-lead-propose
+description: Write proposal — agent must emit [[PROPOSE]] envelope for create_lead. Provides all required customer fields up-front so the agent has no excuse to pre-empt with a clarifying question (per system-prompt best practice — when user supplies the fields, propose with prereq, don't ask).
+prompt: "Create a lead for new customer John Doe at DLR01: cellPhone 2485559999, addressLine1 123 Main Street, city Detroit, stateCode MI, zipCode 48201, leadSource WLK"
+auth:
+  user_id: EVALUSER
+  password: Admin123
+expect:
+  # The agent must produce a proposal envelope. The framework owns whether
+  # it lands as a clean proposal (toolName=create_lead) or a prerequisiteGap
+  # (asking for customerId resolution). Either is correct behavior — what
+  # we forbid is the marker silently going missing.
+  proposal:
+    # Either is correct: agent may emit a clean proposal for create_lead with a
+    # prerequisiteGap that lists create_customer as the satisfier, OR the
+    # framework may decompose and surface create_customer as the first visible
+    # chain step. Both prove the propose path works.
+    tool_name_any_of:
+      - create_lead
+      - create_customer
+  latency_ms_max: 45000
+  tokens_total_max: 22000
+flaky: false

@@ -1,0 +1,17 @@
+id: t-stock-summary
+description: Single-tool happy path — count vehicles for a dealer (smoke baseline)
+prompt: "How many vehicles do we have in stock at DLR01?"
+auth:
+  user_id: EVALUSER
+  password: Admin123
+expect:
+  reply_contains:
+    - "DLR01"
+  reply_matches:
+    - "\\d+"
+  tool_calls_include:
+    - get_stock_summary
+  latency_ms_max: 30000
+  tokens_total_max: 18000
+  proposal: null
+flaky: false

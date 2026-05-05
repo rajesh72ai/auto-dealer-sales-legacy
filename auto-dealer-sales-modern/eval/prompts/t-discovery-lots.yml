@@ -1,0 +1,16 @@
+id: t-discovery-lots
+description: Path A auto-discovery — "lot locations" has no curated tool; keyword retrieval must surface the auto-extracted endpoint and the agent must call it
+prompt: "List our lot locations"
+auth:
+  user_id: EVALUSER
+  password: Admin123
+expect:
+  # Auto-discovered tool name follows the pattern get_api_<path-with-dashes>.
+  # Live extraction (verified 2026-05-04 eval run): the endpoint resolves to
+  # get_api_lot-locations — i.e. /api/lot-locations, not /api/admin/lot-locations.
+  tool_calls_include:
+    - get_api_lot-locations
+  latency_ms_max: 30000
+  tokens_total_max: 16000
+  proposal: null
+flaky: false

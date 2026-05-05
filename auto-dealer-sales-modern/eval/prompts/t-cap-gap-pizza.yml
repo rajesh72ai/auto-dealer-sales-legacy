@@ -1,0 +1,22 @@
+id: t-cap-gap-pizza
+description: L7 + L14 capability-gap — out-of-scope ask must (a) decline gracefully, (b) call log_capability_gap, (c) acknowledge the log in the reply
+prompt: "Order pizza for the team please"
+auth:
+  user_id: EVALUSER
+  password: Admin123
+expect:
+  # The 3-element reply pattern from L14 — must contain "logged" so the
+  # user knows their request wasn't dropped on the floor.
+  reply_contains:
+    - "logged"
+  # Current-limitation framing (today / right now / at this time) — not
+  # a permanent decline.
+  reply_matches:
+    - "(today|right now|at this time|currently)"
+  # The agent must actually fire the tool, not just pretend.
+  tool_calls_include:
+    - log_capability_gap
+  latency_ms_max: 30000
+  tokens_total_max: 16000
+  proposal: null
+flaky: false
