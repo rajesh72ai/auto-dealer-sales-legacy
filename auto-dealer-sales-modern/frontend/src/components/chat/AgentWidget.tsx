@@ -916,17 +916,34 @@ function AgentWidget() {
                   }`}
                 >
                   {msg.role === 'assistant' ? (
-                    msg.content === '' ? (
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
-                        <span className="text-sm">{statusText ?? 'Planning…'}</span>
-                      </div>
-                    ) : (
-                      <>
+                    <>
+                      {/*
+                        Render proposal/error cards INDEPENDENTLY of the prose body.
+                        Earlier this branch wrapped EVERYTHING (markdown, usage chip,
+                        proposal card, export buttons) behind `msg.content !== ''`,
+                        so when Gemini emitted only a [[PROPOSE]] marker the cleaned
+                        prose was "" and the proposal card never rendered — the user
+                        saw a forever-spinner with the proposal trapped in the DB.
+                        See conv b928d43e from 2026-05-04 (msg #16 had empty content
+                        but a valid proposal token b1dc7e50).
+                      */}
+                      {msg.content === '' ? (
+                        !msg.proposal && !msg.proposalError && (
+                          idx === messages.length - 1 && isLoading ? (
+                            <div className="flex items-center gap-2 text-gray-500">
+                              <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+                              <span className="text-sm">{statusText ?? 'Planning…'}</span>
+                            </div>
+                          ) : (
+                            <p className="text-sm italic text-gray-500">(no response — try again)</p>
+                          )
+                        )
+                      ) : (
                         <div className="overflow-x-auto text-sm [&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-1 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-1 [&_p]:my-1 [&_ul]:my-1 [&_ul]:pl-4 [&_ul]:list-disc [&_ol]:my-1 [&_ol]:pl-4 [&_ol]:list-decimal [&_li]:my-0.5 [&_hr]:my-2 [&_hr]:border-gray-200 [&_table]:w-full [&_table]:text-[11px] [&_table]:border-collapse [&_table]:my-2 [&_th]:bg-violet-50 [&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_th]:font-semibold [&_th]:border [&_th]:border-violet-200 [&_td]:px-2 [&_td]:py-1 [&_td]:border [&_td]:border-gray-200 [&_strong]:font-semibold [&_code]:bg-violet-50 [&_code]:px-1 [&_code]:rounded [&_code]:text-xs [&_blockquote]:border-l-2 [&_blockquote]:border-violet-300 [&_blockquote]:pl-2 [&_blockquote]:text-gray-600">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                         </div>
-                        {msg.usage && msg.usage.totalTokens > 0 && (
+                      )}
+                      {msg.usage && msg.usage.totalTokens > 0 && (
                           <div
                             className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-violet-50 px-2.5 py-1.5 text-[11px] text-violet-800"
                             title={
@@ -1253,8 +1270,7 @@ function AgentWidget() {
                             </button>
                           </div>
                         )}
-                      </>
-                    )
+                    </>
                   ) : (
                     <p className="whitespace-pre-wrap">{msg.content}</p>
                   )}

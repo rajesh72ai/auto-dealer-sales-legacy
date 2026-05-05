@@ -16,6 +16,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -139,6 +140,67 @@ class ActionServiceTest {
         assertThrows(RuntimeException.class, () -> actionService.confirm("T-4"));
         verify(auditService).recordFailed(any(), any(), eq("T-4"), eq("fake"), eq("A"),
                 any(), eq("POST"), any(), any(), anyLong());
+    }
+
+    @Test
+    void expireStaleForConversation_noConversationId_isNoOp() {
+        int n = actionService.expireStaleForConversationAndAnnotate(null);
+        assertEquals(0, n);
+        verifyNoInteractions(conversationService);
+        verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    void expireStaleForConversation_blank_isNoOp() {
+        int n = actionService.expireStaleForConversationAndAnnotate("   ");
+        assertEquals(0, n);
+        verifyNoInteractions(conversationService);
+        verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    void expireStaleForConversation_nothingExpired_doesNotAnnotate() {
+        when(tokenService.expireStaleForConversation("conv-x")).thenReturn(List.of());
+        int n = actionService.expireStaleForConversationAndAnnotate("conv-x");
+        assertEquals(0, n);
+        verify(conversationService, never()).appendSystemNote(any(), any());
+    }
+
+    @Test
+    void expireStaleForConversation_singleProposal_writesSingleToolNote() {
+        AgentActionProposal stale = pendingProposal("T-stale-1", "ADMIN001");
+        stale.setToolName("create_customer");
+        stale.setStatus("EXPIRED");
+        when(tokenService.expireStaleForConversation("conv-9")).thenReturn(List.of(stale));
+
+        int n = actionService.expireStaleForConversationAndAnnotate("conv-9");
+
+        assertEquals(1, n);
+        org.mockito.ArgumentCaptor<String> noteCap = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(conversationService).appendSystemNote(eq("conv-9"), noteCap.capture());
+        String note = noteCap.getValue();
+        assertTrue(note.contains("create_customer"), "note should name the abandoned tool");
+        assertTrue(note.contains("expired"), "note should signal expiry");
+        assertTrue(note.contains("Do NOT re-propose"), "note should forbid resurfacing");
+    }
+
+    @Test
+    void expireStaleForConversation_multipleProposals_listsAllToolsInNote() {
+        AgentActionProposal a = pendingProposal("T-a", "ADMIN001");
+        a.setToolName("create_customer"); a.setStatus("EXPIRED");
+        AgentActionProposal b = pendingProposal("T-b", "ADMIN001");
+        b.setToolName("create_lead"); b.setStatus("EXPIRED");
+        when(tokenService.expireStaleForConversation("conv-2")).thenReturn(List.of(a, b));
+
+        int n = actionService.expireStaleForConversationAndAnnotate("conv-2");
+
+        assertEquals(2, n);
+        org.mockito.ArgumentCaptor<String> noteCap = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(conversationService).appendSystemNote(eq("conv-2"), noteCap.capture());
+        String note = noteCap.getValue();
+        assertTrue(note.contains("create_customer"));
+        assertTrue(note.contains("create_lead"));
+        assertTrue(note.contains("2 prior proposals"), "note should pluralize");
     }
 
     @Test

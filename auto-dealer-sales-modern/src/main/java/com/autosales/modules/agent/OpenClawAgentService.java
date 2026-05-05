@@ -122,6 +122,7 @@ public class OpenClawAgentService implements AgentService {
                 if (existing.isPresent() && !existing.get().getUserId().equals(userId)) {
                     return new AgentResponse("Conversation not found.", model, null);
                 }
+                actionService.expireStaleForConversationAndAnnotate(conversationId);
                 messages.addAll(conversationService.loadReplayMessages(conversationId));
             }
             Map<String, Object> userEntry = new LinkedHashMap<>();
@@ -227,6 +228,7 @@ public class OpenClawAgentService implements AgentService {
                         emitter.complete();
                         return;
                     }
+                    actionService.expireStaleForConversationAndAnnotate(conversationIdHolder[0]);
                     messages.addAll(conversationService.loadReplayMessages(conversationIdHolder[0]));
                 }
                 Map<String, Object> userEntry = new LinkedHashMap<>();

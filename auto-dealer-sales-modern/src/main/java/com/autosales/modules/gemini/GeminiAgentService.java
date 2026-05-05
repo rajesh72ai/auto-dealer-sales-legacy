@@ -386,6 +386,10 @@ public class GeminiAgentService implements AgentService {
                 if (existing.isPresent() && !existing.get().getUserId().equals(userId)) {
                     return new AgentResponse("Conversation not found.", model, null);
                 }
+                // Hygiene before replay: mark any pending proposals whose TTL has
+                // elapsed as EXPIRED and inject a cancellation system note so
+                // Gemini doesn't re-propose abandoned workflows on the next turn.
+                actionService.expireStaleForConversationAndAnnotate(conversationId);
                 messages.addAll(conversationService.loadReplayMessages(conversationId));
             }
             Map<String, Object> userEntry = new LinkedHashMap<>();

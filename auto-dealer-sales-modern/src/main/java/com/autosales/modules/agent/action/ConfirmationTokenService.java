@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -91,6 +92,24 @@ public class ConfirmationTokenService {
     @Transactional
     public int expireStale() {
         return repo.expirePending(LocalDateTime.now());
+    }
+
+    /**
+     * Conversation-scoped variant of {@link #expireStale()}. Returns the proposals
+     * just transitioned to EXPIRED so the caller can build a per-conversation
+     * cancellation signal (e.g. a system note for the LLM's next replay).
+     */
+    @Transactional
+    public List<AgentActionProposal> expireStaleForConversation(String conversationId) {
+        if (conversationId == null || conversationId.isBlank()) return List.of();
+        LocalDateTime now = LocalDateTime.now();
+        List<AgentActionProposal> stale = repo.findExpiredPendingForConversation(conversationId, now);
+        for (AgentActionProposal p : stale) {
+            p.setStatus(AgentActionProposal.Status.EXPIRED.name());
+            p.setDecidedAt(now);
+            repo.save(p);
+        }
+        return stale;
     }
 
     private String toJson(Object o) {

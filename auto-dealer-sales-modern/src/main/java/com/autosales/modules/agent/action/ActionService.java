@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -105,6 +106,49 @@ public class ActionService {
                 .expiresAt(proposal.getExpiresAt())
                 .reversible(handler.reversible())
                 .build();
+    }
+
+    /**
+     * Per-conversation hygiene called at the start of each turn. Marks any
+     * PENDING proposals whose TTL has elapsed as EXPIRED and persists a
+     * system note so the LLM's next replay carries an explicit cancellation
+     * signal.
+     *
+     * <p>Without this, Gemini sees a half-finished workflow in conversation
+     * history and re-emits the abandoned proposal alongside the next turn's
+     * actual answer. Observed live in conv b928d43e on 2026-05-04: a
+     * create_customer PROPOSE for "Shaneesh Nanu" sat unconfirmed for ~10
+     * minutes, then resurfaced when the user asked an unrelated list_leads
+     * question — the model added a fresh propose for the same payload
+     * because the conversation context implied the workflow was incomplete.
+     *
+     * @return number of proposals just transitioned to EXPIRED (0 = no-op)
+     */
+    public int expireStaleForConversationAndAnnotate(String conversationId) {
+        if (conversationId == null || conversationId.isBlank()) return 0;
+        List<AgentActionProposal> stale = tokenService.expireStaleForConversation(conversationId);
+        if (stale.isEmpty()) return 0;
+        conversationService.appendSystemNote(conversationId, buildExpiredProposalNote(stale));
+        log.info("Expired {} stale proposal(s) in conv {}; cancellation note injected",
+                stale.size(), conversationId);
+        return stale.size();
+    }
+
+    private String buildExpiredProposalNote(List<AgentActionProposal> stale) {
+        StringBuilder note = new StringBuilder("Cancellation signal — ");
+        if (stale.size() == 1) {
+            note.append("the prior ").append(stale.get(0).getToolName())
+                .append(" proposal expired without confirmation; the user moved on. ");
+        } else {
+            note.append(stale.size()).append(" prior proposals expired without confirmation (");
+            for (int i = 0; i < stale.size(); i++) {
+                if (i > 0) note.append(", ");
+                note.append(stale.get(i).getToolName());
+            }
+            note.append("); the user moved on. ");
+        }
+        note.append("Do NOT re-propose these workflows unless the current user message explicitly asks for them again.");
+        return note.toString();
     }
 
     public ExecutionResult confirm(String token) {

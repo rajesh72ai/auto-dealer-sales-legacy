@@ -1,0 +1,32 @@
+id: t-proposal-prose-non-empty
+description: |
+  Regression guard for the empty-prose-with-proposal bug. When the agent
+  emits a [[PROPOSE]] marker, it should also include explanatory prose so
+  any frontend that renders content + proposal cards together works
+  correctly. Surfaced live 2026-05-04 via conv b928d43e msg #16:
+  Gemini emitted only the marker, the cleaned content was "", and the
+  AgentWidget's content-conditional render hid the proposal card behind
+  a stuck spinner. Frontend was fixed (proposal card now renders
+  independently of content), but this eval is the backend-side belt that
+  ensures we never ship a regression where the agent's reply is genuinely
+  empty alongside a proposal.
+auth:
+  user_id: EVALUSER
+  password: Admin123
+flaky: false
+prompt: "Create a new lead for Sarah Mitchell at DLR01 with leadSource WLK"
+expect:
+  # Reply must contain at least one alphabetic character followed by 30+
+  # more characters — i.e., a sentence-ish amount of prose, not "" or ".".
+  # The exact text varies (Gemini phrasing); regex stays loose.
+  reply_matches:
+    - "[A-Za-z][\\s\\S]{30,}"
+  # Proposal must come back too (either clean create_lead or chained
+  # create_customer-as-prereq). Together with the reply check, this
+  # asserts the marker did not crowd out the prose.
+  proposal:
+    tool_name_any_of:
+      - create_lead
+      - create_customer
+  latency_ms_max: 45000
+  tokens_total_max: 22000
