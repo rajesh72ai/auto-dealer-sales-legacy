@@ -1,0 +1,43 @@
+id: t-multi-deictic-customer-ref
+description: |
+  Multi-turn structured-state regression. After finding Sarah Mitchell in
+  turn 1, turn 2 references her deictically ("her") instead of by name. The
+  agent must reuse the customerId from the entity-state slot WITHOUT a
+  redundant find_customer call. Demonstrates the conversation-state
+  corruption fix — without a structured slot the agent re-verifies on every
+  turn (per the action-request protocol), wasting a tool call and tokens.
+auth:
+  user_id: EVALUSER
+  password: Admin123
+flaky: false
+turns:
+  - prompt: "Find customer Sarah Mitchell at DLR01"
+    expect:
+      # Turn 1 establishes the anchor: agent looks up Sarah Mitchell, the
+      # entity-state slot records {entityType: customer, dealerCode: DLR01,
+      # firstName: Sarah, lastName: Mitchell, customerId: <id>}.
+      reply_contains:
+        - "Sarah"
+        - "Mitchell"
+      tool_calls_include:
+        - find_customer
+      tool_calls_tier: R
+      proposal: null
+      latency_ms_max: 30000
+      tokens_total_max: 18000
+
+  - prompt: "Now create a lead for her at DLR01, leadSource WLK"
+    expect:
+      # Turn 2 uses "her" — no name to verify. The entity-state slot must
+      # resolve "her" → the customerId recorded in turn 1, so create_lead
+      # can be proposed directly. A find_customer call here would mean the
+      # slot didn't anchor the deictic reference (the bug we're closing).
+      tool_calls_exclude:
+        - find_customer
+        - list_customers
+      tool_calls_tier: R
+      proposal:
+        tool_name_any_of:
+          - create_lead
+      latency_ms_max: 30000
+      tokens_total_max: 22000
