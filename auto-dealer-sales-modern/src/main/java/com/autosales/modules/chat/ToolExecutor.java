@@ -1,6 +1,8 @@
 package com.autosales.modules.chat;
 
+import com.autosales.modules.agent.action.CurrentUserContext;
 import com.autosales.modules.discovery.AutoDescriptorRouter;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +11,13 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class ToolExecutor {
@@ -20,13 +28,16 @@ public class ToolExecutor {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final AutoDescriptorRouter autoRouter;
+    private final CurrentUserContext currentUserContext;
 
     public ToolExecutor(@Value("${api.key}") String apiKey,
                         @Value("${server.port:8480}") int port,
                         ObjectMapper objectMapper,
-                        AutoDescriptorRouter autoRouter) {
+                        AutoDescriptorRouter autoRouter,
+                        CurrentUserContext currentUserContext) {
         this.objectMapper = objectMapper;
         this.autoRouter = autoRouter;
+        this.currentUserContext = currentUserContext;
         this.restClient = RestClient.builder()
                 .baseUrl("http://localhost:" + port)
                 .defaultHeader("X-API-Key", apiKey)
@@ -43,61 +54,60 @@ public class ToolExecutor {
 
                 // Vehicles
                 case "list_vehicles" -> get("/api/vehicles?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_vehicle" -> get("/api/vehicles/%s", arg(args, "vin"));
                 case "decode_vin" -> get("/api/vehicles/%s/decode", arg(args, "vin"));
 
                 // Customers
                 case "list_customers" -> get("/api/customers?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_customer" -> get("/api/customers/%s", arg(args, "customerId"));
-                case "find_customer" -> get("/api/customers/search?type=LN&value=%s&dealerCode=%s&page=0&size=20",
-                        arg(args, "lastName"), arg(args, "dealerCode"));
+                case "find_customer" -> findCustomer(args);
 
                 // Deals
                 case "list_deals" -> get("/api/deals?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_deal" -> get("/api/deals/%s", arg(args, "dealNumber"));
 
                 // Stock
-                case "get_stock_summary" -> get("/api/stock/summary?dealerCode=%s", arg(args, "dealerCode"));
+                case "get_stock_summary" -> get("/api/stock/summary?dealerCode=%s", dealerCodeOrSession(args));
                 case "get_stock_positions" -> get("/api/stock/positions?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
-                case "get_stock_aging" -> get("/api/stock/aging?dealerCode=%s", arg(args, "dealerCode"));
-                case "get_stock_alerts" -> get("/api/stock/alerts?dealerCode=%s", arg(args, "dealerCode"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
+                case "get_stock_aging" -> get("/api/stock/aging?dealerCode=%s", dealerCodeOrSession(args));
+                case "get_stock_alerts" -> get("/api/stock/alerts?dealerCode=%s", dealerCodeOrSession(args));
 
                 // Floor Plan
-                case "get_floorplan_vehicles" -> get("/api/floorplan/vehicles?dealerCode=%s", arg(args, "dealerCode"));
-                case "get_floorplan_exposure" -> get("/api/floorplan/reports/exposure?dealerCode=%s", arg(args, "dealerCode"));
+                case "get_floorplan_vehicles" -> get("/api/floorplan/vehicles?dealerCode=%s", dealerCodeOrSession(args));
+                case "get_floorplan_exposure" -> get("/api/floorplan/reports/exposure?dealerCode=%s", dealerCodeOrSession(args));
 
                 // Finance
                 case "list_finance_apps" -> get("/api/finance/applications?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
 
                 // Registration & Warranty
                 case "list_registrations" -> get("/api/registrations?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_warranty_by_vin" -> get("/api/warranties/by-vin/%s", arg(args, "vin"));
                 case "list_warranty_claims" -> get("/api/warranty-claims?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "list_recalls" -> get("/api/recalls?page=%s&size=%s",
                         arg(args, "page", "0"), arg(args, "size", "50"));
 
                 // Leads
                 case "list_leads" -> get("/api/leads?dealerCode=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "page", "0"), arg(args, "size", "50"));
 
                 // Production & Shipments
                 case "list_shipments" -> get("/api/production/shipments?dealer=%s&status=%s&page=%s&size=%s",
-                        arg(args, "dealerCode"), arg(args, "status", ""), arg(args, "page", "0"), arg(args, "size", "50"));
+                        dealerCodeOrSession(args), arg(args, "status", ""), arg(args, "page", "0"), arg(args, "size", "50"));
                 case "get_shipment" -> get("/api/production/shipments/%s", arg(args, "shipmentId"));
 
                 // Batch & Reports
                 case "get_batch_jobs" -> get("/api/batch/jobs");
                 case "get_daily_sales_report" -> get("/api/batch/reports/daily-sales?dealerCode=%s&startDate=%s&endDate=%s",
-                        arg(args, "dealerCode"), arg(args, "startDate"), arg(args, "endDate"));
+                        dealerCodeOrSession(args), arg(args, "startDate"), arg(args, "endDate"));
                 case "get_commissions_report" -> get("/api/batch/reports/commissions?dealerCode=%s&payPeriod=%s",
-                        arg(args, "dealerCode"), arg(args, "payPeriod"));
+                        dealerCodeOrSession(args), arg(args, "payPeriod"));
 
                 // Calculators & Actions
                 case "calculate_loan" -> post("/api/finance/applications/loan-calculator", args);
@@ -166,6 +176,135 @@ public class ToolExecutor {
     private String arg(Map<String, Object> args, String key, String defaultValue) {
         Object val = args.get(key);
         return val != null ? val.toString() : defaultValue;
+    }
+
+    /**
+     * Resolve {@code dealerCode}: prefer the explicit arg supplied by the LLM,
+     * fall back to the caller's own dealership from {@link CurrentUserContext}.
+     * Returns "" when neither is available — callers downstream will surface
+     * the resulting 400 from the controller.
+     *
+     * <p>Why this exists: tool schemas mark {@code dealerCode} optional so the
+     * LLM doesn't waste a turn asking the user for a value the system already
+     * knows. This helper is what makes that promise true at execution time.
+     */
+    private String dealerCodeOrSession(Map<String, Object> args) {
+        String explicit = arg(args, "dealerCode");
+        if (!explicit.isBlank()) return explicit;
+        try {
+            String fromSession = currentUserContext.current().getDealerCode();
+            return fromSession != null ? fromSession : "";
+        } catch (Exception e) {
+            log.debug("dealerCodeOrSession: no session dealer available ({})", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * find_customer with name-field fallback. The LLM can pass an ambiguous
+     * single token (e.g. "Aditya") in either {@code lastName} or
+     * {@code firstName} without asking the user to disambiguate. We perform
+     * up to TWO searches (LN and FN) and merge the results.
+     *
+     * <ul>
+     *   <li>Both lastName + firstName supplied: search by lastName only —
+     *       the firstName narrows in the LLM's reasoning.</li>
+     *   <li>Only lastName: search LN; ALSO search FN with the same token to
+     *       catch the "user gave a first name, LLM stuffed it in lastName"
+     *       case. Merge.</li>
+     *   <li>Only firstName: symmetric to above.</li>
+     *   <li>Neither: return an error message (user truly gave no name).</li>
+     * </ul>
+     */
+    private String findCustomer(Map<String, Object> args) {
+        String dealer = dealerCodeOrSession(args);
+        String last = arg(args, "lastName");
+        String first = arg(args, "firstName");
+
+        if (dealer.isBlank()) {
+            return "Error: dealerCode missing and no caller dealership in session — cannot search customers.";
+        }
+        if (last.isBlank() && first.isBlank()) {
+            return "Error: provide at least firstName or lastName for find_customer.";
+        }
+
+        boolean bothNames = !last.isBlank() && !first.isBlank();
+
+        String lnBody = null;
+        String fnBody = null;
+        try {
+            if (!last.isBlank()) {
+                lnBody = customerSearch(dealer, "LN", last);
+            }
+            if (bothNames) {
+                // Both supplied — LN is enough; LLM can filter by first.
+            } else if (!first.isBlank()) {
+                fnBody = customerSearch(dealer, "FN", first);
+            } else {
+                // Only lastName given — also try it as a firstName for
+                // ambiguous single tokens like "Aditya".
+                fnBody = customerSearch(dealer, "FN", last);
+            }
+        } catch (Exception e) {
+            log.warn("find_customer search failed: {}", e.getMessage());
+            return "Error: customer search failed: " + e.getMessage();
+        }
+
+        return mergeCustomerSearchResults(lnBody, fnBody);
+    }
+
+    private String customerSearch(String dealer, String type, String value) {
+        String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+        String encodedDealer = URLEncoder.encode(dealer, StandardCharsets.UTF_8);
+        String url = "/api/customers/search?type=" + type
+                + "&value=" + encodedValue
+                + "&dealerCode=" + encodedDealer
+                + "&page=0&size=20";
+        log.debug("Tool GET (find_customer leg): {}", url);
+        return restClient.get().uri(url).retrieve().body(String.class);
+    }
+
+    /**
+     * Merge two paginated customer-search responses into one envelope,
+     * de-duplicating by {@code customerId}. Either input may be {@code null}
+     * (when only one search leg ran). Synthesizes new pagination metadata
+     * because we no longer correspond to a single repository page.
+     */
+    @SuppressWarnings("unchecked")
+    private String mergeCustomerSearchResults(String lnBody, String fnBody) {
+        try {
+            List<Map<String, Object>> merged = new java.util.ArrayList<>();
+            Set<Object> seenIds = new LinkedHashSet<>();
+
+            for (String body : List.of(
+                    lnBody == null ? "" : lnBody,
+                    fnBody == null ? "" : fnBody)) {
+                if (body.isBlank()) continue;
+                Map<String, Object> parsed = objectMapper.readValue(body,
+                        new TypeReference<Map<String, Object>>() {});
+                Object content = parsed.get("content");
+                if (!(content instanceof List<?> list)) continue;
+                for (Object item : list) {
+                    if (!(item instanceof Map<?, ?> row)) continue;
+                    Object id = row.get("customerId");
+                    if (id != null && seenIds.add(id)) {
+                        merged.add((Map<String, Object>) row);
+                    }
+                }
+            }
+
+            Map<String, Object> envelope = new LinkedHashMap<>();
+            envelope.put("status", "SUCCESS");
+            envelope.put("message", "OK");
+            envelope.put("content", merged);
+            envelope.put("page", 0);
+            envelope.put("totalPages", merged.isEmpty() ? 0 : 1);
+            envelope.put("totalElements", merged.size());
+            return objectMapper.writeValueAsString(envelope);
+        } catch (Exception e) {
+            log.warn("merge customer search failed, returning raw LN body: {}", e.getMessage());
+            return lnBody != null ? lnBody : (fnBody != null ? fnBody : "Error: customer merge failed");
+        }
     }
 
     private String truncate(String response) {

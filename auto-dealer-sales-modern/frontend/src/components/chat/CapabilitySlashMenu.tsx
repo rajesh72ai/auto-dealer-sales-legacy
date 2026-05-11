@@ -53,21 +53,36 @@ export function CapabilitySlashMenu({ filter, capabilities, onPick, onClose }: P
   // Bind global key handlers while open. Parent component is responsible
   // for un-mounting us when the user clears or sends; we just manage the
   // ↑↓/Enter/Esc events.
+  //
+  // CRITICAL: Enter must call BOTH preventDefault() AND stopPropagation()
+  // (and stopImmediatePropagation for good measure). The textarea's React
+  // onKeyDown is a delegated bubble-phase listener attached at the React
+  // root; without stopping propagation here in the capture phase, the
+  // SAME Enter keystroke that picks the menu item also fires the
+  // textarea's submit handler — net effect: pick = insert AND auto-send,
+  // which defeats the whole "let the user edit before sending" promise.
+  // The handleKeyDown guard in AgentWidget is defense-in-depth, but
+  // stopping the event here is the load-bearing fix.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        e.stopPropagation();
         setActiveIdx((i) => Math.min(filtered.length - 1, i + 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
+        e.stopPropagation();
         setActiveIdx((i) => Math.max(0, i - 1));
       } else if (e.key === 'Enter') {
         if (filtered.length === 0) return;
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         const cap = filtered[activeIdx];
         if (cap) onPick(cap.examplePrompts[0]);
       } else if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation();
         onClose();
       }
     }

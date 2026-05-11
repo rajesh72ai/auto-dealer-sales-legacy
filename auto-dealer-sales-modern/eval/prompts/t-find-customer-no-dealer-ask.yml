@@ -1,0 +1,41 @@
+id: t-find-customer-no-dealer-ask
+description: |
+  Regression guard for the piecemeal-clarification UX bug surfaced live
+  2026-05-05. Originally the agent walked the user across 3+ turns asking
+  for "first or last name?" and "what is the dealer code?" sequentially —
+  even though dealerCode is in the caller's session and find_customer can
+  search both first/last fields. After the fix:
+    - dealerCode auto-defaults from CurrentUserContext (caller is EVALUSER
+      at DLR01), so the agent must not ask for it
+    - find_customer searches both lastName and firstName under the hood,
+      so the agent must not ask "is that first or last?"
+    - The universal "batch missing fields" rule means a single short
+      prompt should produce a single tool call + answer, not a clarifying
+      ladder
+auth:
+  user_id: EVALUSER
+  password: Admin123
+flaky: false
+prompt: "find customer Sarah Mitchell"
+expect:
+  # find_customer should be called with NO clarifying ask up-front. The
+  # tool either returns the seeded Sarah Mitchell (DLR01) or no hit, but
+  # critically it must be CALLED — not deferred behind a question.
+  tool_calls_include:
+    - find_customer
+  tool_calls_tier: R
+  # The agent must not ask the user for dealer code or first/last
+  # disambiguation. These phrases are the smoking guns of the old bug.
+  reply_not_contains:
+    - "dealer code"
+    - "Dealer code"
+    - "dealerCode"
+    - "first name or last name"
+    - "first or last name"
+    - "What is the dealer"
+    - "what is the dealer"
+    - "which dealer"
+    - "Which dealer"
+  proposal: null
+  latency_ms_max: 30000
+  tokens_total_max: 18000

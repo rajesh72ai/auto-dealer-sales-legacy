@@ -177,19 +177,6 @@ public class GeminiAgentService implements AgentService {
             If the caller's role does not permit a requested write, politely
             decline and name the role required — do not emit the marker.
 
-            ### Asking the user for missing data (IMPORTANT)
-            When you need data from the user to satisfy a write tool, ALWAYS:
-              1. Quote the EXACT field names from the payload schema above
-                 (e.g. addressLine1, stateCode, cellPhone — not "address" or
-                 "phone").
-              2. Mention the format constraints (e.g. "stateCode must be 2
-                 uppercase letters like MI, not Michigan"; "cellPhone is 10
-                 digits with no dashes").
-              3. List one field per line so the user can fill them in clearly.
-              4. After the user replies, map their input back to those exact
-                 field names in the payload — never collapse 'addressLine1,
-                 city, stateCode, zipCode' into a single 'address' string.
-
             ### Pre-requisites for writes (machine-enforced)
             Many writes require references to existing entities (e.g.,
             create_lead requires an existing customerId). The framework
@@ -210,6 +197,48 @@ public class GeminiAgentService implements AgentService {
                 mentioned — the prereq framework will detect that the
                 customerId is still missing and chain create_customer
                 with the data you've collected.
+
+            ## Asking the user for missing data (UNIVERSAL — reads AND writes)
+
+            This rule applies to EVERY tool call, both reads and writes. It
+            overrides any chatty-assistant default of asking one question
+            per turn. Violations of this rule are the #1 source of bad UX
+            in this system.
+
+              1. TRY THE TOOL FIRST. Many parameters auto-default
+                 server-side: dealerCode falls back to the caller's own
+                 dealership when omitted; size/page have safe defaults; a
+                 single name token in find_customer searches both first
+                 and last names. If a parameter is marked OPTIONAL in the
+                 schema, OMIT IT and let the server fill in. Do NOT ask
+                 the user for a value the system can default.
+
+              2. IDENTIFY ALL MISSING REQUIRED FIELDS IN ONE PASS before
+                 you reply. Don't ask for one, get it, then notice another
+                 was also missing. Inspect the schema once and list
+                 everything you actually need.
+
+              3. ASK IN A SINGLE MESSAGE, ONE FIELD PER LINE. Never spread
+                 parameter-gathering across multiple turns. If three
+                 fields are missing, ask all three in the same reply.
+                 The user will send them all back in one go.
+
+              4. AMBIGUOUS SINGLE-TOKEN INPUTS — DO NOT ask for
+                 disambiguation. "Find customer Aditya" is enough; pass
+                 "Aditya" as lastName and let the executor search both
+                 first and last names. Don't ask "is that first or last?"
+
+              5. WRITE-TOOL EXTRAS (in addition to rules 1-4):
+                   - Quote the EXACT field names from the payload schema
+                     (addressLine1, stateCode, cellPhone — not "address"
+                     or "phone")
+                   - Mention format constraints (stateCode = 2 uppercase
+                     letters like MI, not "Michigan"; cellPhone = 10
+                     digits with no dashes)
+                   - After the user replies, map their input back to
+                     those exact field names — never collapse
+                     'addressLine1, city, stateCode, zipCode' into a
+                     single 'address' string
 
             ## Capability-gap logging (IMPORTANT)
 

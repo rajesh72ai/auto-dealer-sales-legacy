@@ -1,0 +1,31 @@
+id: t-find-customer-single-token
+description: |
+  Companion to t-find-customer-no-dealer-ask. Tests the executor-side
+  dual-name search: when the user gives a single ambiguous name token
+  ("Mitchell" — could be first or last), the agent must call
+  find_customer immediately without asking "is that first or last?".
+  The executor performs both LN and FN searches and merges the results,
+  so the LLM never has to disambiguate up-front. Sarah Mitchell is
+  seeded at DLR01, so a lastName-leg search will hit her.
+auth:
+  user_id: EVALUSER
+  password: Admin123
+flaky: false
+prompt: "find customer Mitchell"
+expect:
+  tool_calls_include:
+    - find_customer
+  tool_calls_tier: R
+  reply_contains:
+    - "Mitchell"
+  reply_not_contains:
+    - "first name or last name"
+    - "first or last name"
+    - "is that the first"
+    - "is that her first"
+    - "dealer code"
+    - "Dealer code"
+    - "which dealer"
+  proposal: null
+  latency_ms_max: 30000
+  tokens_total_max: 18000

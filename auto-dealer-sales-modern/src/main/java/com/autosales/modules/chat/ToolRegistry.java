@@ -20,7 +20,7 @@ public class ToolRegistry {
 
         // --- Vehicles ---
         register("list_vehicles", "List vehicles for a dealer with pagination",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
@@ -32,7 +32,7 @@ public class ToolRegistry {
 
         // --- Customers ---
         register("list_customers", "List customers for a dealer",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
@@ -41,16 +41,18 @@ public class ToolRegistry {
 
         register("find_customer",
                 "Search for an existing customer by name. Use this BEFORE proposing create_customer "
-                + "or any action that needs a customerId. More precise than list_customers (which is "
-                + "paginated bulk listing). Searches via 'last name contains' match — for best results "
-                + "pass the LAST name; the result set will be small enough to scan for the right person.",
-                props(required("dealerCode", "string", "Dealer code, e.g. DLR01"),
-                      required("lastName", "string", "Customer's last name (or partial match)"),
-                      optional("firstName", "string", "Optional first name to narrow the match further")));
+                + "or any action that needs a customerId. SPLIT multi-token names: 'Sarah Mitchell' = "
+                + "firstName 'Sarah' + lastName 'Mitchell'. For SINGLE-token names where you can't "
+                + "tell first vs last (e.g. 'Aditya'), pass the token as lastName ONLY (leave "
+                + "firstName empty) — the executor automatically also runs a firstName search and "
+                + "merges results. NEVER ask the user 'is that first or last?' — just call the tool.",
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
+                      optional("lastName", "string", "Customer's last name. For ambiguous single-token inputs, pass the single token here and leave firstName empty — the executor also tries a first-name search."),
+                      optional("firstName", "string", "Optional first name. Set when the user clearly named both (e.g. 'Sarah Mitchell' → firstName='Sarah'). Leave empty for single-token inputs.")));
 
         // --- Deals ---
         register("list_deals", "List deals for a dealer",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
@@ -59,35 +61,35 @@ public class ToolRegistry {
 
         // --- Stock & Inventory ---
         register("get_stock_summary", "Get inventory stock summary (total on hand, in transit, sold, value)",
-                props(required("dealerCode", "string", "Dealer code")));
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this.")));
 
         register("get_stock_positions", "Get stock positions with pagination",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         register("get_stock_aging", "Get aging report showing how long vehicles have been in stock",
-                props(required("dealerCode", "string", "Dealer code")));
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this.")));
 
         register("get_stock_alerts", "Get low stock alerts for a dealer",
-                props(required("dealerCode", "string", "Dealer code")));
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this.")));
 
         // --- Floor Plan ---
         register("get_floorplan_vehicles", "Get floor plan financed vehicles",
-                props(required("dealerCode", "string", "Dealer code")));
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this.")));
 
         register("get_floorplan_exposure", "Get floor plan exposure/risk report",
-                props(required("dealerCode", "string", "Dealer code")));
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this.")));
 
         // --- Finance ---
         register("list_finance_apps", "List finance applications for a dealer",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
         // --- Registration & Warranty ---
         register("list_registrations", "List vehicle registrations for a dealer",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
@@ -95,7 +97,7 @@ public class ToolRegistry {
                 props(required("vin", "string", "Vehicle Identification Number")));
 
         register("list_warranty_claims", "List warranty claims for a dealer",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
@@ -105,7 +107,7 @@ public class ToolRegistry {
 
         // --- Leads & CRM ---
         register("list_leads", "List customer leads for a dealer",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       optional("page", "integer", "Page number (default 0)"),
                       optional("size", "integer", "Page size — default 50, max 100. Pass size=100 when the user asks for a filter, sort, or aggregation that the tool does not directly expose, so you have enough records to scan.")));
 
@@ -116,7 +118,7 @@ public class ToolRegistry {
                 "Get daily sales summaries for a dealer over a date range. "
                 + "If the user does not specify dates, default to the past 7 days "
                 + "(use today's date for endDate and today-7 for startDate).",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       required("startDate", "string", "Start date inclusive, YYYY-MM-DD"),
                       required("endDate", "string", "End date inclusive, YYYY-MM-DD")));
 
@@ -124,7 +126,7 @@ public class ToolRegistry {
                 "Get sales commissions for a dealer for a specific pay period. "
                 + "If the user does not specify a period, default to the current month "
                 + "in YYYY-MM format (e.g. 2026-05).",
-                props(required("dealerCode", "string", "Dealer code"),
+                props(optional("dealerCode", "string", "Dealer code. OMIT to default to the caller's own dealership — never ask the user for this."),
                       required("payPeriod", "string", "Pay period in YYYY-MM format, e.g. 2026-05")));
 
         // --- Safe Actions (POST) ---
